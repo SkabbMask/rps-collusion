@@ -1,0 +1,78 @@
+{
+  "model": "iid uniform honest vs one fixed uniformly unknown ordered assisting pair",
+  "label": "binary coalition mechanism, balanced prior; not coalition membership",
+  "n_players": 3,
+  "rounds": 3,
+  "cp": 0.5,
+  "relabel_interval": 1,
+  "messages": "explicit observed silence under both hypotheses; full=metadata=identified",
+  "relabel_channel": "fresh independent uniform player permutation at each block boundary",
+  "views": {
+    "full": {
+      "tv": 0.20438957475993366,
+      "bayes_error": 0.39780521262003316,
+      "mi_bits": 0.04769242523928125,
+      "kl_coalition_honest_bits": 0.1950036220651055,
+      "power_upper_alpha_plus_tv": 0.2543895747599337,
+      "optimal_power_at_alpha": 0.11670953360768135,
+      "alpha": 0.05,
+      "kind": "exact_enumeration_up_to_float_roundoff",
+      "n_view_atoms": 19683
+    },
+    "identified": {
+      "tv": 0.20438957475993366,
+      "bayes_error": 0.39780521262003316,
+      "mi_bits": 0.04769242523928125,
+      "kl_coalition_honest_bits": 0.1950036220651055,
+      "power_upper_alpha_plus_tv": 0.2543895747599337,
+      "optimal_power_at_alpha": 0.11670953360768135,
+      "alpha": 0.05,
+      "kind": "exact_enumeration_up_to_float_roundoff",
+      "n_view_atoms": 19683
+    },
+    "relabelled": {
+      "tv": 0.1400891632373122,
+      "bayes_error": 0.4299554183813439,
+      "mi_bits": 0.026796297092436173,
+      "kl_coalition_honest_bits": 0.10160674573946969,
+      "power_upper_alpha_plus_tv": 0.19008916323731218,
+      "optimal_power_at_alpha": 0.08241169410150881,
+      "alpha": 0.05,
+      "kind": "exact_enumeration_up_to_float_roundoff",
+      "n_view_atoms": 1000
+    },
+    "histogram": {
+      "tv": 0.14008916323731221,
+      "bayes_error": 0.4299554183813439,
+      "mi_bits": 0.026796297092436163,
+      "kl_coalition_honest_bits": 0.10160674573946965,
+      "power_upper_alpha_plus_tv": 0.19008916323731223,
+      "optimal_power_at_alpha": 0.08241169410150881,
+      "alpha": 0.05,
+      "kind": "exact_enumeration_up_to_float_roundoff",
+      "n_view_atoms": 1000
+    },
+    "summaries": {
+      "tv": 0.14008916323731418,
+      "bayes_error": 0.4299554183813429,
+      "mi_bits": 0.02679629709243528,
+      "kl_coalition_honest_bits": 0.10160674573943651,
+      "power_upper_alpha_plus_tv": 0.19008916323731417,
+      "optimal_power_at_alpha": 0.08241169410150961,
+      "alpha": 0.05,
+      "kind": "exact_enumeration_up_to_float_roundoff",
+      "n_view_atoms": 27
+    },
+    "metadata": {
+      "tv": 0.20438957475993366,
+      "bayes_error": 0.39780521262003316,
+      "mi_bits": 0.04769242523928125,
+      "kl_coalition_honest_bits": 0.1950036220651055,
+      "power_upper_alpha_plus_tv": 0.2543895747599337,
+      "optimal_power_at_alpha": 0.11670953360768135,
+      "alpha": 0.05,
+      "kind": "exact_enumeration_up_to_float_roundoff",
+      "n_view_atoms": 19683
+    }
+  }
+}

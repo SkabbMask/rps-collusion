@@ -1,0 +1,55 @@
+{
+  "source": "target simulator random backend + explicit synthetic stress models",
+  "base_revision": "4e11fd2efbe5fc9d5d80bec7d32522514ac2896f",
+  "python": "3.12.14",
+  "platform": "Linux-6.18.55-x86_64-with-glibc2.39",
+  "versions": {
+    "numpy": "2.3.5",
+    "scipy": "1.17.0",
+    "networkx": "3.7",
+    "matplotlib": "3.10.8",
+    "scikit-learn": "1.8.0"
+  },
+  "dataset_sha256": "09ab0b47b366b37442cd369c7700323a9c4fa4b88d3f5b167c6f6030889b9e98",
+  "config_sha256": "a8e7a2c43f411bfdce22cb5e0a7853d000bcfb471e24297db080c7df991ae1f4",
+  "episodes": 6253,
+  "test_episodes": 4300,
+  "group_counts": {
+    "N3_T100_none": {
+      "edge_fit": 80,
+      "calibration": 199,
+      "test": 500
+    },
+    "N3_T300_none": {
+      "edge_fit": 80,
+      "calibration": 199,
+      "test": 500
+    },
+    "N6_T100_none": {
+      "edge_fit": 80,
+      "calibration": 199,
+      "test": 1100
+    },
+    "N6_T300_none": {
+      "edge_fit": 80,
+      "calibration": 199,
+      "test": 1300
+    },
+    "N3_T300_last_round": {
+      "edge_fit": 80,
+      "calibration": 199,
+      "test": 300
+    },
+    "N6_T300_last_round": {
+      "edge_fit": 80,
+      "calibration": 199,
+      "test": 300
+    },
+    "N6_T300_public_state": {
+      "edge_fit": 80,
+      "calibration": 199,
+      "test": 300
+    }
+  },
+  "evaluation_seconds": 81.75849881600016
+}

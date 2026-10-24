@@ -1,0 +1,18 @@
+{
+  "seed": 12345,
+  "players": [3, 6],
+  "rounds": [100, 300],
+  "collusion_probabilities": [0.25, 1.0],
+  "n_edge_fit": 19,
+  "n_calibration": 39,
+  "n_test": 6,
+  "alpha": 0.05,
+  "stress_tests": true,
+  "detector": {
+    "permutations": 39,
+    "min_pair_rounds": 20,
+    "min_state_rounds": 10,
+    "k_max": 5,
+    "seed": 12345
+  }
+}

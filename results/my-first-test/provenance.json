@@ -1,0 +1,35 @@
+{
+  "arguments": {
+    "config": "configs/information.json",
+    "output": "results/my-first-test",
+    "dataset": null,
+    "manifest": null,
+    "relabel_interval": 25,
+    "delta": 0.05,
+    "exact_only": false,
+    "exact_rounds": 3,
+    "exact_cp": 0.5,
+    "exact_relabel_interval": 1
+  },
+  "python": "3.14.8",
+  "versions": {
+    "numpy": "2.5.4",
+    "scipy": "1.18.1"
+  },
+  "source_sha256": {
+    "information.py": "7433535100c03add8eb45417924cd770721db028e022e51d9a5066d1991c4169",
+    "rps/info/__init__.py": "74c535938037db35f9dda31459a05e543326520c204c0752e2dda283b08a4149",
+    "rps/info/bounds.py": "40a2036ced4fd12748565107fe9aada0f18708522fabd7971131965c43248c4e",
+    "rps/info/evaluate.py": "8108218e27e4fa026ad75804b88fa4023bfe76f34242f35d2e7c0b3ffe84aed9",
+    "rps/info/exact.py": "e65d4c33c64f504e56f741be356e31a81497364c9d9f63ec912b36669108404a",
+    "rps/info/features.py": "8f2d31379ca2da0de0a459dcae24f51d65f8611635f6502cf9f41b583457eb4e",
+    "rps/info/report.py": "0f80fd34bb04b212f9f44360c26dc2bb7b69b5a5766fd6fa53f374bf8101b2b6",
+    "rps/observe/views.py": "f028e8bdff33acccefa818a30b58abe36eb39e02a8d2e38a97514e2c516fc2bc",
+    "rps/observe/features.py": "b36db2774e911747ba949b0e53a69f23bfbc664c6e5e75fa7351e8ce27033f2b",
+    "rps/benchmark/data.py": "588e8fdc62de59b1bad379428545111bf9e6c57559e4bcaff460e044e8862fd3",
+    "rps/players.py": "af18f2bad45914efe0d71c186c7385efa73dacf45bd000043c4494dead105282",
+    "simulate.py": "21531fc90591ea3a599d2d40c2f6abe07e4a8032b79985bfd56068e17f589320"
+  },
+  "config_sha256": "3c5cd6b85b8289af6a45c941f4597d0dd52ed637970ce84db1c4cfd606adc9cd",
+  "information_feature_version": 1
+}

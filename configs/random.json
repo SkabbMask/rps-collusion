@@ -1,0 +1,14 @@
+{
+  "rounds": 300,
+  "collusion_probability": 0.5,
+  "alpha": 0.05,
+  "state": "none",
+  "seed": 42,
+  "log": "runs/random.jsonl",
+  "defaults": {"backend": "random"},
+  "players": [
+    {"name": "A", "role": "primary"},
+    {"name": "B", "role": "assistant", "partner": "A"},
+    {"name": "C", "role": "honest"}
+  ]
+}

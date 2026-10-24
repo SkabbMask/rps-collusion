@@ -1,0 +1,12 @@
+{
+  "seed": 20261024,
+  "players": [3],
+  "rounds": [100],
+  "collusion_probabilities": [0.5, 1.0],
+  "n_edge_fit": 40,
+  "n_calibration": 99,
+  "n_test": 100,
+  "alpha": 0.05,
+  "stress_tests": false,
+  "public_messages": true
+}

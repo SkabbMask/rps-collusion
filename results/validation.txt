@@ -1,0 +1,41 @@
+test_collusion_labels_cannot_calibrate (test_benchmark.TestLeakageGuards.test_collusion_labels_cannot_calibrate) ... ok
+test_relabeling_truth_cannot_hide_duplicate_calibration_trajectory (test_benchmark.TestLeakageGuards.test_relabeling_truth_cannot_hide_duplicate_calibration_trajectory) ... ok
+test_confusion_and_negative_infinite_scores (test_benchmark.TestMetrics.test_confusion_and_negative_infinite_scores) ... ok
+test_exact_groups_different_from_union (test_benchmark.TestMetrics.test_exact_groups_different_from_union) ... ok
+test_nondetection_counts_as_naming_failure (test_benchmark.TestMetrics.test_nondetection_counts_as_naming_failure) ... ok
+test_wilson_endpoints_contain_observed_rate (test_benchmark.TestMetrics.test_wilson_endpoints_contain_observed_rate) ... ok
+test_assistant_guarantees_primary_point (test_benchmark.TestSimulator.test_assistant_guarantees_primary_point) ... ok
+test_fast_path_exactly_matches_pinned_upstream_fixture (test_benchmark.TestSimulator.test_fast_path_exactly_matches_pinned_upstream_fixture) ... ok
+test_modular_parity_has_full_joint_dependence (test_benchmark.TestSimulator.test_modular_parity_has_full_joint_dependence) ... ok
+test_reproducible_generation_and_random_members (test_benchmark.TestSimulator.test_reproducible_generation_and_random_members) ... ok
+test_finite_sample_order_and_ties (test_detection.TestCalibration.test_finite_sample_order_and_ties) ... ok
+test_json_is_standard_and_infinities_roundtrip (test_detection.TestCalibration.test_json_is_standard_and_infinities_roundtrip) ... ok
+test_matching_shape_and_settings_required (test_detection.TestCalibration.test_matching_shape_and_settings_required) ... ok
+test_threshold_gates_naming (test_detection.TestCalibration.test_threshold_gates_naming) ... ok
+test_decoder_finds_unknown_coalition (test_detection.TestGraphDecoder.test_decoder_finds_unknown_coalition) ... ok
+test_graphs_find_disjoint_groups (test_detection.TestGraphDecoder.test_graphs_find_disjoint_groups) ... ok
+test_greedy_with_negative_edges_does_not_select_diagonal (test_detection.TestGraphDecoder.test_greedy_with_negative_edges_does_not_select_diagonal) ... ok
+test_strict_edge_cutoff_and_missing_edges (test_detection.TestGraphDecoder.test_strict_edge_cutoff_and_missing_edges) ... ok
+test_validation_and_no_supported_pairs (test_detection.TestGraphDecoder.test_validation_and_no_supported_pairs) ... ok
+test_anonymous_view_is_not_silently_used_as_identified (test_detection.TestPairwise.test_anonymous_view_is_not_silently_used_as_identified) ... ok
+test_cmi_exact_nats_and_matches_original (test_detection.TestPairwise.test_cmi_exact_nats_and_matches_original) ... ok
+test_deterministic_seed (test_detection.TestPairwise.test_deterministic_seed) ... ok
+test_higher_order_dependence_has_zero_pairwise_mi (test_detection.TestPairwise.test_higher_order_dependence_has_zero_pairwise_mi) ... ok
+test_missing_pair_support_and_sparse_states_abstain (test_detection.TestPairwise.test_missing_pair_support_and_sparse_states_abstain) ... ok
+test_pairwise_counts_cells_using_joint_validity (test_detection.TestPairwise.test_pairwise_counts_cells_using_joint_validity) ... ok
+test_permutations_recover_assistance_not_just_copying (test_detection.TestPairwise.test_permutations_recover_assistance_not_just_copying) ... ok
+test_public_state_removes_pure_common_cause (test_detection.TestPairwise.test_public_state_removes_pure_common_cause) ... ok
+test_arbitrary_public_state_cardinality (test_observe.TestObservations.test_arbitrary_public_state_cardinality) ... ok
+test_bad_inputs_rejected (test_observe.TestObservations.test_bad_inputs_rejected) ... ok
+test_categorical_actions_order_and_first_round (test_observe.TestObservations.test_categorical_actions_order_and_first_round) ... ok
+test_hidden_fields_do_not_leak (test_observe.TestObservations.test_hidden_fields_do_not_leak) ... ok
+test_histogram_is_identity_free (test_observe.TestObservations.test_histogram_is_identity_free) ... ok
+test_last_round_uses_past_not_current_action (test_observe.TestObservations.test_last_round_uses_past_not_current_action) ... ok
+test_missing_actions_masked_and_invalid_rejected (test_observe.TestObservations.test_missing_actions_masked_and_invalid_rejected) ... ok
+test_relabelled_blocks_cannot_be_stitched (test_observe.TestObservations.test_relabelled_blocks_cannot_be_stitched) ... ok
+test_upstream_tuple_input (test_observe.TestObservations.test_upstream_tuple_input) ... ok
+
+----------------------------------------------------------------------
+Ran 36 tests in 0.029s
+
+OK

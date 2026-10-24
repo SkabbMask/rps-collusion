@@ -1,0 +1,31 @@
+{
+  "seed": 20261024,
+  "players": [
+    3,
+    6
+  ],
+  "rounds": [
+    100,
+    300
+  ],
+  "collusion_probabilities": [
+    0.1,
+    0.25,
+    0.5,
+    1.0
+  ],
+  "n_edge_fit": 80,
+  "n_calibration": 199,
+  "n_test": 100,
+  "alpha": 0.05,
+  "stress_tests": true,
+  "detector": {
+    "permutations": 99,
+    "min_pair_rounds": 20,
+    "min_state_rounds": 10,
+    "k_max": 5,
+    "max_exhaustive": 200000,
+    "seed": 20261024,
+    "baseline_alpha": 0.05
+  }
+}
