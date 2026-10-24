@@ -1,0 +1,3 @@
+numpy>=1.26
+# optional: Louvain communities as a second cluster extractor
+networkx>=3.1

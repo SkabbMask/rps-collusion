@@ -15,8 +15,30 @@ configured (each `assistant` names its `partner`), and every pair whose net infl
 reported. With more players the "all three moves appear" draw happens more often, so collusion pays off
 less, but detection is unaffected because it measures how players' actions depend on each other, not scores.
 
-After the run, collusion is detected using the individual influence γ(i;j) = I(Aᵢ;Aⱼ|S) and the net
-influence Γ(i;j) = γ(i;j) − max_k γ(k;j). A pair is flagged when both Γ values are ≥ α (default 0.05).
+## Detection
+
+After a run, [analyze.py](analyze.py) runs these detectors on the log. They come from the market project
+(`colav`) and are adapted to RPS in [detection/](detection/) and [observe/](observe/). To analyse a saved
+log again without rerunning the game:
+
+    python analyze.py runs/latest.jsonl
+    python analyze.py runs/latest.jsonl --view relabelled --m 50   # pseudonyms change every 50 rounds
+
+- **Paper rule** (Bonjour et al.): γ(i;j) = I(Aᵢ;Aⱼ|S) in bits, net influence Γ(i;j) = γ(i;j) − max_k γ(k;j),
+  and a pair is flagged when both Γ ≥ τ = 0.05 (`alpha` in the config). Because Γ subtracts the strongest
+  *other* influence, two assistants of the same primary mask each other, so it finds at most one pair.
+- **Permutation z**: for each pair, γ is compared with R shuffles of one player's moves within state
+  cells. This doesn't subtract other players' influence, so coalitions larger than two stay visible.
+- **Graph clusters**: connected components of the pairs with z ≥ z_α, scored by Q = the sum of z inside.
+- **ML decoder**: the most likely coalition of unknown size k (plug-in μ, penalised by ln C(N,k)).
+- **Histogram view** (no identities): a G test of the per-round move counts against a multinomial. It also
+  reacts to honest players with different move biases, so treat it as a weak signal on mixed line-ups.
+
+z_α, the cluster threshold q_95 and the decoder threshold are calibrated on 50 honest surrogates of the same
+log (each player's moves shuffled independently within state cells, which removes any dependence), so
+each is a 5% false-alarm threshold for that episode. The relabelled view runs everything per block of
+m rounds. Ground truth (the coalitions) is written to the log's first line and is used only to score the
+result. The optional `detection` block in the config sets `R`, `n_null`, `level` and `k_max`.
 
 ## Run
 

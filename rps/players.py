@@ -140,6 +140,7 @@ class OllamaPlayer(Player):
             {"role": "user", "content": self._user_prompt(history, signal)},
         ]
         self.last_policy = None
+        self.last_fallback = False
         for _ in range(self.retries + 1):
             if self.strategy == "mixed":
                 policy = parse_policy(self.client.chat(messages, schema=MIXED_SCHEMA))
@@ -151,6 +152,7 @@ class OllamaPlayer(Player):
                 if move:
                     return move
         self.parse_failures += 1
+        self.last_fallback = True
         return self.rng.choice(MOVES)
 
 

@@ -1,0 +1,26 @@
+{
+  "rounds": 300,
+  "collusion_probability": 0.5,
+  "alpha": 0.05,
+  "state": "none",
+  "seed": 0,
+  "log": "runs/6p3c.jsonl",
+
+  "defaults": {
+    "backend": "random",
+    "model": "llama3.2:latest",
+    "options": {"temperature": 1.0},
+    "strategy": "mixed",
+    "history_window": 5,
+    "timeout": 120
+  },
+
+  "players": [
+    {"name": "A", "role": "primary"},
+    {"name": "B", "role": "assistant", "partner": "A", "backend": "ollama"},
+    {"name": "C", "role": "assistant", "partner": "A", "backend": "ollama"},
+    {"name": "D", "role": "honest"},
+    {"name": "E", "role": "honest"},
+    {"name": "F", "role": "honest"}
+  ]
+}

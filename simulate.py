@@ -14,10 +14,14 @@ import random
 import sys
 from concurrent.futures import ThreadPoolExecutor
 
-from rps.detect import detect
+from analyze import AnalysisParams, analyse, print_report
+from detection.pairwise import PairwiseParams
+from detection.pooled import PooledParams
+from observe.features import Episode
 from rps.game import assist_move, payoffs
 from rps.ollama import OllamaError
 from rps.players import build_player
+
 
 def state_of(history, mode):
     if mode == "none":
@@ -44,11 +48,21 @@ def run(cfg):
     cp = cfg.get("collusion_probability", 0.0)
     state_mode = cfg.get("state", "none")
 
-    history, records = [], []
+    coalitions = {}
+    for a in assistants:
+        coalitions.setdefault(a.partner, [a.partner]).append(a.name)
+    meta = {
+        "names": names,
+        "truth": {"roles": {p.name: p.role for p in players}, "coalitions": list(coalitions.values())},
+        "config": {k: v for k, v in cfg.items() if k != "verbose"},
+    }
+
+    history = []
     log = None
     if cfg.get("log"):
         os.makedirs(os.path.dirname(cfg["log"]) or ".", exist_ok=True)
         log = open(cfg["log"], "w")
+        log.write(json.dumps({"meta": meta}) + "\n")
     pool = ThreadPoolExecutor(max_workers=len(players))
     try:
         for t in range(cfg["rounds"]):
@@ -64,10 +78,10 @@ def run(cfg):
             actions = {n: actions[n] for n in names}
             pay = dict(zip(names, payoffs(list(actions.values()))))
             policies = {p.name: p.last_policy for p in players if getattr(p, "last_policy", None)}
+            fallback = [p.name for p in players if getattr(p, "last_fallback", False)]
             entry = {"round": t + 1, "state": state, "actions": actions, "payoffs": pay, "signalled": signalled,
-                     "policies": policies}
+                     "policies": policies, "fallback": fallback}
             history.append(entry)
-            records.append((state, actions))
             if log:
                 log.write(json.dumps(entry) + "\n")
                 log.flush()
@@ -77,10 +91,12 @@ def run(cfg):
         pool.shutdown()
         if log:
             log.close()
-    return players, history, records
+    episode_id = os.path.splitext(os.path.basename(cfg["log"]))[0] if cfg.get("log") else "run"
+    return players, Episode(episode_id, names, history, truth=meta["truth"], config=meta["config"])
 
 
-def report(players, history, records, alpha):
+def report(players, ep, cfg):
+    history = ep.rounds
     names = [p.name for p in players]
     totals = {n: sum(r["payoffs"][n] for r in history) for n in names}
     print(f"Rounds: {len(history)}")
@@ -95,15 +111,12 @@ def report(players, history, records, alpha):
         if getattr(p, "parse_failures", 0):
             print(f"{p.name}: {p.parse_failures} unparseable replies (fell back to random)")
 
-    gamma, net, pairs = detect(records, names, alpha)
-    print("\nIndividual influence gamma(i;j):")
-    for (i, j), g in gamma.items():
-        print(f"  gamma({i};{j}) = {g:.4f}")
-    print("Net influence Gamma(i;j):")
-    for (i, j), g in net.items():
-        print(f"  Gamma({i};{j}) = {g:+.4f}")
-    found = ", ".join(f"{i}-{j}" for i, j in pairs)
-    print(f"\nalpha = {alpha}: " + (f"collusion detected between {found}" if pairs else "no collusion detected"))
+    d = cfg.get("detection", {})
+    R = d.get("R", 200)
+    ap = AnalysisParams(PairwiseParams(R=R, tau=cfg.get("alpha", 0.05), seed=cfg.get("seed") or 0),
+                        PooledParams(R=R), n_null=d.get("n_null", 50), level=d.get("level", 0.95),
+                        k_max=d.get("k_max", 5))
+    print_report(ep, analyse(ep, ap), ap)
 
 
 def load_env(path):
@@ -134,7 +147,7 @@ def main():
     ap.add_argument("--env", default=".env", help="dotenv file with Ollama endpoints (ignored if missing)")
     ap.add_argument("--rounds", type=int)
     ap.add_argument("--cp", type=float, help="collusion probability (chance the covert signal is sent)")
-    ap.add_argument("--alpha", type=float, help="collusion threshold")
+    ap.add_argument("--alpha", type=float, help="paper threshold tau on net influence (bits)")
     ap.add_argument("--url", help="override the Ollama URL for every player (ip:port or full URL)")
     ap.add_argument("--model", help="override the model for every player")
     ap.add_argument("--state", choices=["none", "last_round"], help="state used for conditioning in detection")
@@ -157,10 +170,10 @@ def main():
                 p[key] = val
 
     try:
-        players, history, records = run(cfg)
+        players, ep = run(cfg)
     except OllamaError as e:
         sys.exit(f"Ollama error: {e}")
-    report(players, history, records, cfg.get("alpha", 0.05))
+    report(players, ep, cfg)
 
 
 if __name__ == "__main__":
