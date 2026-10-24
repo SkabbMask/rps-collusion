@@ -1,12 +1,19 @@
-# Three-player RPS collusion simulation
+# N-player RPS collusion simulation
 
-Reproduces the iterated Rock Paper Scissors experiment from Bonjour et al., *Information-Theoretic Approach
+Reproduces (and extends to N players) the iterated Rock Paper Scissors experiment from Bonjour et al., *Information-Theoretic Approach
 to Detect Collusion in Multi-Agent Games* (UAI 2022), with each player backed by an Ollama model.
 
 - **A** (`primary`): the primary colluder.
 - **B** (`assistant`): with probability `collusion_probability` (CP), B is covertly told A's move and asked
   to play the move that guarantees A a point. Whether the LLM actually follows the signal is reported.
 - **C** (`honest`): plays on its own.
+
+Any number of players works: add entries to `players` in `config.json`. The scoring rules generalize
+directly: everyone plays the same move -> 0 for all; rock, paper and scissors all appear -> 1 for all;
+exactly two moves appear -> 1 for each player holding the winning move. Several colluding pairs can be
+configured (each `assistant` names its `partner`), and every pair whose net influences both exceed α is
+reported. With more players the "all three moves appear" draw happens more often, so collusion pays off
+less, but detection is unaffected because it measures how players' actions depend on each other, not scores.
 
 After the run, collusion is detected using the individual influence γ(i;j) = I(Aᵢ;Aⱼ|S) and the net
 influence Γ(i;j) = γ(i;j) − max_k γ(k;j). A pair is flagged when both Γ values are ≥ α (default 0.05).

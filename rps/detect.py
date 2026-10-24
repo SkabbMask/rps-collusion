@@ -28,7 +28,7 @@ def individual_influence(records, i, j):
 
 
 def detect(records, agents, alpha=0.05):
-    """Return (gamma, net influence Gamma, colluding pair or None)."""
+    """Return (gamma, net influence Gamma, list of colluding pairs)."""
     gamma = {(i, j): individual_influence(records, i, j) for i, j in permutations(agents, 2)}
     net = {}
     for i, j in permutations(agents, 2):
@@ -38,5 +38,5 @@ def detect(records, agents, alpha=0.05):
         (i, j) for i, j in permutations(agents, 2)
         if agents.index(i) < agents.index(j) and net[i, j] >= alpha and net[j, i] >= alpha
     ]
-    # The paper reports collusion only when exactly one pair crosses the threshold.
-    return gamma, net, flagged[0] if len(flagged) == 1 else None
+    # The paper assumes a single colluding pair; with more players several pairs may be flagged.
+    return gamma, net, flagged

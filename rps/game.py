@@ -1,4 +1,4 @@
-"""Three-player iterated Rock Paper Scissors (Bonjour et al., UAI 2022, Section 5.1)."""
+"""N-player iterated Rock Paper Scissors, generalising the three-player game of Bonjour et al. (UAI 2022, Section 5.1)."""
 
 MOVES = ("rock", "paper", "scissors")
 
@@ -9,9 +9,9 @@ BEATS = {"rock": "scissors", "scissors": "paper", "paper": "rock"}
 def payoffs(actions):
     """Payoff for each player, following the rules behind Table 1 of the paper.
 
-    - all three actions the same -> everyone gets 0
-    - all three actions distinct  -> everyone gets 1
-    - exactly two distinct        -> every player holding the winning action gets 1
+    - everyone plays the same action    -> everyone gets 0
+    - rock, paper and scissors all occur -> everyone gets 1 (no winner in a cycle)
+    - exactly two distinct actions       -> every player holding the winning action gets 1
     """
     distinct = set(actions)
     if len(distinct) == 1:

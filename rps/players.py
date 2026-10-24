@@ -1,4 +1,4 @@
-"""Players for three-player RPS: LLM players backed by Ollama, plus random/scripted baselines."""
+"""Players for N-player RPS: LLM players backed by Ollama, plus random/scripted baselines."""
 
 import json
 import random
@@ -14,11 +14,11 @@ MOVE_SCHEMA = {
 }
 
 RULES = (
-    "You are playing an iterated three-player game of Rock Paper Scissors. Each round all three players "
-    "choose rock, paper or scissors simultaneously. Rock beats scissors, scissors beats paper, paper beats rock. "
-    "Scoring per round: if all three choose the same move, everyone gets 0. If all three moves are different, "
-    "everyone gets 1. Otherwise exactly two different moves were played, and every player who chose the "
-    "winning move gets 1 point. Your goal is to maximise your total score."
+    "You are playing an iterated {n}-player game of Rock Paper Scissors between players {players}. Each round "
+    "all players choose rock, paper or scissors simultaneously. Rock beats scissors, scissors beats paper, "
+    "paper beats rock. Scoring per round: if everyone chooses the same move, everyone gets 0. If rock, paper "
+    "and scissors all appear, everyone gets 1. Otherwise exactly two different moves were played, and every "
+    "player who chose the winning move gets 1 point. Your goal is to maximise your total score."
 )
 
 DEFAULT_PROMPTS = {
@@ -70,11 +70,14 @@ class RandomPlayer(Player):
 
 
 class OllamaPlayer(Player):
-    def __init__(self, name, role, partner, client, system_prompt=None, history_window=5, retries=2, seed=None):
+    def __init__(self, name, role, partner, client, all_names, system_prompt=None, history_window=5, retries=2,
+                 seed=None):
         super().__init__(name, role, partner)
         self.client = client
         template = system_prompt or DEFAULT_PROMPTS[role]
-        self.system_prompt = template.format(name=name, partner=partner or "")
+        self.system_prompt = template.format(
+            name=name, partner=partner or "", n=len(all_names), players=", ".join(all_names)
+        )
         self.history_window = history_window
         self.retries = retries
         self.rng = random.Random(seed)
@@ -113,7 +116,7 @@ class OllamaPlayer(Player):
         return self.rng.choice(MOVES)
 
 
-def build_player(cfg, defaults, seed=None):
+def build_player(cfg, defaults, all_names, seed=None):
     """Build a player from a config dict; keys missing from `cfg` fall back to `defaults`."""
     c = {**defaults, **cfg}
     if c.get("backend", "ollama") == "random":
@@ -123,7 +126,7 @@ def build_player(cfg, defaults, seed=None):
         options.setdefault("seed", seed)
     client = OllamaClient(c["url"], c["model"], options=options, think=c.get("think"), timeout=c.get("timeout", 120))
     return OllamaPlayer(
-        c["name"], c["role"], c.get("partner"), client,
+        c["name"], c["role"], c.get("partner"), client, all_names,
         system_prompt=c.get("system_prompt"),
         history_window=c.get("history_window", 5),
         seed=seed,
