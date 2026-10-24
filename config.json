@@ -8,15 +8,16 @@
 
   "defaults": {
     "backend": "ollama",
-    "model": "llama3.1:8b",
+    "model": "llama3.2:latest",
     "options": {"temperature": 1.0},
+    "strategy": "mixed",
     "history_window": 5,
     "timeout": 120
   },
 
   "players": [
-    {"name": "A", "role": "primary"},
+    {"name": "A", "role": "primary", "backend": "random"},
     {"name": "B", "role": "assistant", "partner": "A"},
-    {"name": "C", "role": "honest"}
+    {"name": "C", "role": "honest", "backend": "random"}
   ]
 }

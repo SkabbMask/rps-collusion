@@ -16,6 +16,7 @@ from concurrent.futures import ThreadPoolExecutor
 
 from rps.detect import detect
 from rps.game import assist_move, payoffs
+from rps.ollama import OllamaError
 from rps.players import build_player
 
 def state_of(history, mode):
@@ -31,6 +32,8 @@ def run(cfg):
     defaults = cfg.get("defaults", {})
     names = [p["name"] for p in cfg["players"]]
     players = [build_player(p, defaults, names, seed=rng.randrange(2**31)) for p in cfg["players"]]
+    for client in {(c.url, c.model): c for c in (getattr(p, "client", None) for p in players) if c}.values():
+        client.check()
     by_name = {p.name: p for p in players}
     # Assistants move after the other players so that, when collusion is active, they can receive their
     # partner's move over the covert channel. Everyone else moves simultaneously.
@@ -60,7 +63,9 @@ def run(cfg):
             actions.update({n: f.result() for n, f in futures.items()})
             actions = {n: actions[n] for n in names}
             pay = dict(zip(names, payoffs(list(actions.values()))))
-            entry = {"round": t + 1, "state": state, "actions": actions, "payoffs": pay, "signalled": signalled}
+            policies = {p.name: p.last_policy for p in players if getattr(p, "last_policy", None)}
+            entry = {"round": t + 1, "state": state, "actions": actions, "payoffs": pay, "signalled": signalled,
+                     "policies": policies}
             history.append(entry)
             records.append((state, actions))
             if log:
@@ -151,7 +156,10 @@ def main():
             for p in cfg["players"]:
                 p[key] = val
 
-    players, history, records = run(cfg)
+    try:
+        players, history, records = run(cfg)
+    except OllamaError as e:
+        sys.exit(f"Ollama error: {e}")
     report(players, history, records, cfg.get("alpha", 0.05))
 
 

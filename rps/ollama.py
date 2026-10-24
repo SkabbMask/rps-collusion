@@ -1,6 +1,7 @@
 """Minimal Ollama chat client (stdlib only)."""
 
 import json
+import urllib.error
 import urllib.request
 from urllib.parse import urlparse
 
@@ -33,5 +34,26 @@ class OllamaClient:
             data=json.dumps(body).encode(),
             headers={"Content-Type": "application/json"},
         )
-        with urllib.request.urlopen(req, timeout=self.timeout) as resp:
-            return json.loads(resp.read())["message"]["content"]
+        try:
+            with urllib.request.urlopen(req, timeout=self.timeout) as resp:
+                return json.loads(resp.read())["message"]["content"]
+        except urllib.error.HTTPError as e:
+            raise OllamaError(f"{self.url} ({self.model}): HTTP {e.code}: {e.read().decode(errors='replace')}") from None
+
+    def check(self):
+        """Fail early if the server is unreachable or doesn't have the model (only for standard /api/chat URLs)."""
+        if not self.url.endswith("/api/chat"):
+            return
+        tags_url = self.url[: -len("chat")] + "tags"
+        try:
+            with urllib.request.urlopen(tags_url, timeout=10) as resp:
+                available = [m["name"] for m in json.loads(resp.read())["models"]]
+        except (urllib.error.URLError, OSError) as e:
+            raise OllamaError(f"cannot reach Ollama at {tags_url}: {e}") from None
+        names = set(available) | {n.removesuffix(":latest") for n in available}
+        if self.model not in names:
+            raise OllamaError(f"model '{self.model}' not found at {tags_url}; available: {', '.join(available)}")
+
+
+class OllamaError(RuntimeError):
+    pass

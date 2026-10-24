@@ -22,7 +22,7 @@ influence Γ(i;j) = γ(i;j) − max_k γ(k;j). A pair is flagged when both Γ va
 
     cp .env.example .env    # set OLLAMA_URL to the machine running Ollama, e.g. 192.168.1.50:11434
     python simulate.py
-    python simulate.py --rounds 200 --cp 0.5 --model qwen2.5:7b -v
+    python simulate.py --rounds 200 --cp 0.5 --model qwen2.5:14b -v
 
 **`.env`** (not committed) holds the machine-specific endpoints: `OLLAMA_URL` for every player and
 optionally `PLAYER_<NAME>_URL` for a single one. A URL may be `ip:port` (`/api/chat` is appended) or a
