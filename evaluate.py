@@ -1,4 +1,4 @@
-"""Generate or import RPS episodes, evaluate four detectors, and write the report."""
+"""Generate or import RPS episodes, evaluate five detectors, and write the report."""
 import argparse
 import json
 from pathlib import Path

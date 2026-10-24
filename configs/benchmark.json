@@ -15,6 +15,7 @@
     "k_max": 5,
     "max_exhaustive": 200000,
     "seed": 20261024,
-    "baseline_alpha": 0.05
+    "baseline_alpha": 0.05,
+    "growth_frac": 0.25
   }
 }

@@ -1,4 +1,4 @@
-"""Apply the three added detectors and original baseline to one upstream JSONL log."""
+"""Apply all five detectors to one upstream JSONL log using fresh calibration."""
 import argparse
 from dataclasses import asdict
 

@@ -1,5 +1,13 @@
 # Delivery contents
 
+## Average-z growth integration
+
+The current local `dev` working tree adds the teammate's strongest-pair
+average-z growth as a fifth detector. The original four algorithms are retained.
+Fresh schema-2 calibration is required. Complete run commands are in
+`docs/RUNNING.md`; executed validation and comparisons are in
+`docs/NEW_DECODER_VALIDATION.md`. The current suite has 55 passing tests.
+
 ## Subsequent six-view information extension
 
 `information.py` and `rps/info/` add RPS-adapted full, identified, relabelled,

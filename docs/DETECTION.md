@@ -1,5 +1,9 @@
 # Using and extending RPS collusion detection
 
+For the complete five-method experiment, use [RUNNING.md](RUNNING.md).
+The average-z `growth` method requires fresh schema-2 calibration; historical
+four-method files in `results/benchmark/calibration` are not compatible.
+
 ## Layout and method interpretation
 
 ```text
@@ -8,6 +12,7 @@ rps/observe/views.py          identified / pseudonym blocks / histogram / summar
 rps/detection/pairwise.py     conditional MI and state-stratified permutation evidence
 rps/detection/graph.py        connected-components and Louvain detectors
 rps/detection/decoder.py      plug-in maximum-likelihood coalition decoder
+rps/detection/growth.py       strongest-pair relative average-z growth
 rps/detection/pipeline.py     calibrated, threshold-gated decisions
 rps/benchmark/data.py         simulator-backed datasets and external-log import
 rps/benchmark/evaluate.py     independent edge-fit/calibration/test evaluation
@@ -16,7 +21,7 @@ rps/benchmark/report.py       measured-result tables, figures and Markdown
 ```
 
 The requested graph file implements two extractors. Together with its decoder these are the
-three added detection methods. `features.py` and `views.py` provide observations; they do not
+three COLAV detection methods. Average-z growth is a separate fifth method alongside the original baseline. `features.py` and `views.py` provide observations; they do not
 implement independent classifiers. Supporting pairwise code is also adapted because both the
 graph and decoder require a standardized dependence matrix. The original Bonjour implementation
 remains a baseline, preserving its natural-log units and 0.05 threshold.
@@ -29,7 +34,7 @@ run without third-party packages when no new detector is requested.
 ```bash
 python -m pip install -r requirements-detection.txt
 python -m unittest discover -s tests -v
-python evaluate.py --config configs/benchmark.json --output results/new-run
+python evaluate.py --config configs/benchmark.json --output results/full-detection-growth
 ```
 
 `requirements-evaluated.txt` records the numerical package versions used for the delivered
@@ -58,7 +63,7 @@ report. Failed/incomplete output directories are diagnostic artifacts, not finis
 ```bash
 python simulate.py --config configs/random.json
 python analyze.py --log runs/random.jsonl \
-  --calibration results/benchmark/calibration/N3_T300_none.json \
+  --calibration results/full-detection-growth/calibration/N3_T300_none.json \
   --output runs/detection.json
 ```
 
@@ -66,7 +71,7 @@ Or run it immediately after simulation:
 
 ```bash
 python simulate.py --config configs/random.json \
-  --calibration results/benchmark/calibration/N3_T300_none.json \
+  --calibration results/full-detection-growth/calibration/N3_T300_none.json \
   --detection-output runs/detection.json
 ```
 
@@ -78,7 +83,7 @@ The standalone analysis API never needs coalition labels or private signals.
 from rps.observe.features import load_jsonl, symbols
 from rps.detection.pipeline import detect_episode, load_calibration
 
-cal = load_calibration("results/benchmark/calibration/N3_T300_none.json")
+cal = load_calibration("results/full-detection-growth/calibration/N3_T300_none.json")
 view = symbols(load_jsonl("runs/random.jsonl"), state_mode="none")
 decisions, evidence = detect_episode(view, cal)
 print(decisions["decoder"]["groups"])
@@ -87,7 +92,7 @@ print(decisions["decoder"]["groups"])
 A decoder candidate is not returned as a detected coalition until it passes the independently
 calibrated threshold. The result's `details.k` describes the best candidate even if it was rejected;
 only `groups` is a thresholded identification. A dependence flag is not a posterior probability
-or proof of intent. The decoder assumes one dense coalition; graph methods may return several.
+or proof of intent. The ML decoder assumes one dense coalition; average-z growth also returns at most one group. Graph methods may return several.
 
 ## Public state and missing observations
 
@@ -205,3 +210,23 @@ intent. Higher-order-only dependence can evade all pairwise methods. Shared omit
 can trigger all of them. Fine-grained state can make data too sparse, especially with many players.
 Residual temporal dependence can invalidate within-state shuffles. The report includes explicit
 stress tests for each of these practical concerns except arbitrary temporal-policy distributions.
+
+## Average-z growth method
+
+The fifth method (`growth`) adapts the teammate's `new-decoder` algorithm. It
+starts from the strongest supported pair, then repeatedly joins the player
+with highest average z to the current group while that average is at least
+`growth_frac` times the group's current internal mean. Defaults use 0.25,
+fixed before calibration/testing. Missing edges count as zero in means; fully
+unsupported episodes abstain. No true coalition size is supplied.
+
+The candidate score is the seed-pair z. Independent honest calibration sets
+a strict episode-level acceptance cutoff. A candidate only appears in `groups`
+after exceeding that cutoff. `details` provides the seed, additions, rejected
+joiner and relative thresholds as a diagnostic candidate trace.
+
+Calibration schema 2 records all five methods and `growth_frac`. Rerun
+`evaluate.py` with a fresh output directory, or replay an existing dataset,
+then use the new calibration for `analyze.py`/`simulate.py --calibration`.
+Changing `growth_frac` requires recalibration; do not tune it on test results.
+The six information-view algorithms and `information.py` CLI are unchanged.

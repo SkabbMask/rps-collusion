@@ -13,6 +13,7 @@
     "min_pair_rounds": 20,
     "min_state_rounds": 10,
     "k_max": 5,
-    "seed": 12345
+    "seed": 12345,
+    "growth_frac": 0.25
   }
 }

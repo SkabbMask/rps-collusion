@@ -1,5 +1,17 @@
 # N-player RPS collusion simulation
 
+## Run the complete experiment
+
+Follow [the complete step-by-step run guide](docs/RUNNING.md): environment setup,
+tests, one game, the full 6,253-episode **five-detector** benchmark, fresh
+calibration, single-game analysis, six-view information bounds and Ollama runs.
+
+The `new-decoder` average-z growth method is now the fifth detector; the
+previous four remain available for direct comparison. Existing four-method
+calibration files must be regenerated. The guide uses fresh output paths
+`results/full-detection-growth` and `results/full-information-growth`.
+See [integration validation and measured comparison](docs/NEW_DECODER_VALIDATION.md).
+
 ## Six-view information-theoretic report
 
 The information experiment compares `full`, `identified`, `relabelled`,
@@ -27,7 +39,8 @@ This branch starts from `SkabbMask/rps-collusion` revision
 The three additions are **graph connected components**, **graph Louvain communities**, and
 the **plug-in maximum-likelihood coalition decoder**. They share a permutation-calibrated
 conditional-mutual-information evidence layer. The original `rps/detect.py` remains unchanged
-and is evaluated as the fourth, baseline method. Observation helpers now work with categorical
+and is evaluated as the baseline method. Average-z growth from the teammate's
+`new-decoder` branch is the fifth method. Observation helpers now work with categorical
 RPS actions and public game histories. See [attribution](ATTRIBUTION.md) and
 [method/API/data documentation](docs/DETECTION.md).
 
@@ -38,14 +51,14 @@ python -m unittest discover -s tests -v
 # No Ollama server needed for this reproducible scripted benchmark.
 python evaluate.py --config configs/benchmark.json --output results/reproduction
 
-# Play and analyse one game using the included frozen benchmark calibration.
+# Play and analyse one game using the freshly generated five-method calibration.
 python simulate.py --config configs/random.json
 python analyze.py --log runs/random.jsonl \
-  --calibration results/benchmark/calibration/N3_T300_none.json \
+  --calibration results/reproduction/calibration/N3_T300_none.json \
   --output runs/detection.json
 ```
 
-Completed results: [Markdown report](results/benchmark/report.md),
+Historical four-method results: [Markdown report](results/benchmark/report.md),
 [per-condition table](results/benchmark/comparison.csv),
 [all predictions](results/benchmark/predictions.csv), and
 [figures](results/benchmark/figures/). The report documents actual executed experiments,

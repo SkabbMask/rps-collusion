@@ -20,7 +20,7 @@ from pathlib import Path
 
 import numpy as np
 
-from rps.detection.pipeline import (DetectionConfig, METHODS, decisions, json_safe,
+from rps.detection.pipeline import (CALIBRATION_SCHEMA, DetectionConfig, METHODS, decisions, json_safe,
                                     rank_threshold, score_methods, write_json)
 from rps.detection.pairwise import analyse_pairwise
 from rps.observe.features import symbols
@@ -46,7 +46,8 @@ def freeze(group, cfg, edge_values, calibration_scores, ids, alpha):
     edge_threshold = rank_threshold(edge_values, alpha)
     thresholds = {m: rank_threshold([r[m].score for r in calibration_scores], alpha) for m in METHODS}
     thresholds["bonjour"] = cfg.baseline_alpha
-    return {"schema_version": 1, "frozen": True, "group": group, "target_fpr": alpha,
+    return {"schema_version": CALIBRATION_SCHEMA, "methods": list(METHODS),
+            "frozen": True, "group": group, "target_fpr": alpha,
             "signature": {k: group[k] for k in ("n_players", "rounds", "state_mode")},
             "detector_config": asdict(cfg), "edge_threshold": edge_threshold, "thresholds": thresholds,
             "n_edge_fit": len(edge_values), "n_calibration": n_cal,

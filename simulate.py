@@ -153,7 +153,7 @@ def main():
     ap.add_argument("--state", choices=["none", "last_round"], help="state used for conditioning in detection")
     ap.add_argument("--log", help="write per-round JSONL records here")
     ap.add_argument("--seed", type=int)
-    ap.add_argument("--calibration", help="also run the three added detectors using a frozen calibration JSON")
+    ap.add_argument("--calibration", help="also run all five detectors using a fresh frozen calibration JSON")
     ap.add_argument("--detection-output", default="runs/detection.json", help="JSON output for the added detectors")
     ap.add_argument("-v", "--verbose", action="store_true")
     args = ap.parse_args()
@@ -171,15 +171,23 @@ def main():
             for p in cfg["players"]:
                 p[key] = val
 
+    if args.calibration:
+        from types import SimpleNamespace
+        from rps.detection.pipeline import (DetectionConfig, detect_episode, load_calibration,
+                                            validate_calibration, write_json)
+        from rps.observe.features import symbols
+        calibration = load_calibration(args.calibration)
+        validate_calibration(calibration,
+                             SimpleNamespace(N=len(cfg["players"]), T=cfg["rounds"],
+                                             state_mode=cfg.get("state", "none")),
+                             DetectionConfig(**calibration["detector_config"]))
+
     try:
         players, history, records = run(cfg)
     except OllamaError as e:
         sys.exit(f"Ollama error: {e}")
     report(players, history, records, cfg.get("alpha", 0.05))
     if args.calibration:
-        from rps.detection.pipeline import detect_episode, load_calibration, write_json
-        from rps.observe.features import symbols
-        calibration = load_calibration(args.calibration)
         results, _ = detect_episode(symbols(history, state_mode=calibration["signature"]["state_mode"]), calibration)
         write_json(args.detection_output, results)
         print(f"\nAdditional detector results: {args.detection_output}")

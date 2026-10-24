@@ -15,8 +15,8 @@ from rps.detection.graph import edge_set
 from rps.detection.pipeline import METHODS, METHOD_LABELS
 from .metrics import binary_metrics, finite_ranks, wilson
 
-COLORS = {"bonjour": "#667085", "graph_components": "#007f86", "graph_louvain": "#e49a1b", "decoder": "#7354ad"}
-STYLE = {"bonjour": "--", "graph_components": "-", "graph_louvain": ":", "decoder": "-."}
+COLORS = {"bonjour": "#667085", "graph_components": "#007f86", "graph_louvain": "#e49a1b", "decoder": "#7354ad", "growth": "#d4513c"}
+STYLE = {"bonjour": "--", "graph_components": "-", "graph_louvain": ":", "decoder": "-.", "growth": "--"}
 
 
 def _number(x, digits=3):
@@ -41,6 +41,7 @@ def _save(fig, path):
 
 
 def figures(output, rows, comparisons, summary, example):
+    methods = tuple(summary)
     dest = output / "figures"
     dest.mkdir(exist_ok=True)
     plt.rcParams.update({"font.family": "DejaVu Sans", "font.size": 10, "axes.spines.top": False,
@@ -50,7 +51,7 @@ def figures(output, rows, comparisons, summary, example):
     if cells:
         fig, axes = plt.subplots(math.ceil(len(cells) / 2), 2, figsize=(11, 4 * math.ceil(len(cells) / 2)), squeeze=False)
         for ax, group in zip(axes.ravel(), cells):
-            for method in METHODS:
+            for method in methods:
                 values = sorted([c for c in comparisons if c["group"] == group and c["scenario"] == "pair" and c["method"] == method],
                                 key=lambda c: c["cp"])
                 x, y = [c["cp"] for c in values], [c["recall"] for c in values]
@@ -70,7 +71,7 @@ def figures(output, rows, comparisons, summary, example):
                 (r["scenario"] == "honest" or r["scenario"] == "pair" and r["cp"] == .25)]
     if roc_rows and {r["positive"] for r in roc_rows} == {True, False}:
         fig, ax = plt.subplots(figsize=(6.4, 5.2))
-        for method in METHODS:
+        for method in methods:
             r = [x for x in roc_rows if x["method"] == method]
             fpr, tpr, _ = roc_curve([x["positive"] for x in r], finite_ranks([x["score"] for x in r]))
             ax.plot(fpr, tpr, STYLE[method], color=COLORS[method], label=f"{METHOD_LABELS[method]} (AUC {binary_metrics(r)['auroc']:.3f})")
@@ -82,8 +83,8 @@ def figures(output, rows, comparisons, summary, example):
         paths.append("roc")
     if summary:
         fig, axes = plt.subplots(1, 2, figsize=(11, 4.8))
-        labels = [METHOD_LABELS[m].replace(" ", "\n", 1) for m in METHODS]
-        for index, method in enumerate(METHODS):
+        labels = [METHOD_LABELS[m].replace(" ", "\n", 1) for m in methods]
+        for index, method in enumerate(methods):
             s = summary[method]
             axes[0].bar(index, s["fpr"], color=COLORS[method])
             axes[0].errorbar(index, s["fpr"], yerr=[[max(0, s["fpr"] - s["fpr_ci_low"])], [max(0, s["fpr_ci_high"] - s["fpr"])]], color="#222", capsize=4)
@@ -93,7 +94,7 @@ def figures(output, rows, comparisons, summary, example):
         axes[0].legend(fontsize=8)
         axes[1].set(title="Standalone analysis cost", ylabel="Median milliseconds / episode")
         for ax in axes:
-            ax.set_xticks(range(4), labels)
+            ax.set_xticks(range(len(methods)), labels)
             ax.grid(axis="y", alpha=.15)
         fig.tight_layout()
         _save(fig, dest / "false_alarms_runtime")
@@ -103,9 +104,9 @@ def figures(output, rows, comparisons, summary, example):
         fig, ax = plt.subplots(figsize=(9, 4.7))
         cases = ["pair", "star3", "two_pairs"]
         x = np.arange(3)
-        for mi, method in enumerate(METHODS):
+        for mi, method in enumerate(methods):
             y = [next((c["exact_groups"] for c in recovery if c["method"] == method and c["scenario"] == case), np.nan) for case in cases]
-            ax.bar(x + (mi - 1.5) * .19, y, width=.19, color=COLORS[method], label=METHOD_LABELS[method])
+            ax.bar(x + (mi - (len(methods) - 1) / 2) * (.8 / len(methods)), y, width=.8 / len(methods), color=COLORS[method], label=METHOD_LABELS[method])
         ax.set_xticks(x, ["One pair", "Three-person star", "Two disjoint pairs"])
         ax.set(ylabel="Exact coalition-group recovery", ylim=(0, 1.08), title="Naming the right groups · N = 6, T = 300, CP = 1")
         ax.legend(fontsize=8, loc="upper center", bbox_to_anchor=(.5, -.12), ncol=2)
@@ -138,15 +139,16 @@ def figures(output, rows, comparisons, summary, example):
 
 def generate_report(output, rows, comparisons, calibrations, config, provenance, example):
     from .evaluate import write_csv
+    methods = tuple(m for m in METHODS if any(r["method"] == m for r in rows))
     core = [r for r in rows if r["group"].endswith("_none") and r["scenario"] in ("honest", "pair", "star3", "two_pairs")]
     # External manifests may use arbitrary group names; preserve a useful
     # report and clearly label that this is the provided test mixture.
     if not core:
         core = [r for r in rows if r["scenario"] != "shared_state_ignored"]
-    summary = {m: binary_metrics([r for r in core if r["method"] == m]) for m in METHODS}
+    summary = {m: binary_metrics([r for r in core if r["method"] == m]) for m in methods}
     core_ids = {r["episode_id"] for r in core}
     core_groups = {r["group"] for r in core}
-    for method in METHODS:
+    for method in methods:
         aucs = [c["auroc"] for c in comparisons if c["method"] == method and c["group"] in core_groups
                 and c["scenario"] in ("pair", "star3", "two_pairs") and math.isfinite(c["auroc"])]
         summary[method]["macro_auroc"] = float(np.mean(aucs)) if aucs else float("nan")
@@ -159,10 +161,10 @@ def generate_report(output, rows, comparisons, calibrations, config, provenance,
                      for m, s in summary.items()])
     paired = []
     positive_ids = sorted({r["episode_id"] for r in core if r["positive"]})
-    by_method = {m: {r["episode_id"]: r for r in core if r["method"] == m} for m in METHODS}
+    by_method = {m: {r["episode_id"]: r for r in core if r["method"] == m} for m in methods}
     rng = np.random.default_rng(config["seed"])
     if positive_ids:
-        for method in METHODS[1:]:
+        for method in methods[1:]:
             for metric in ("flag", "exact_groups"):
                 differences = np.array([int(by_method[method][i][metric]) - int(by_method["bonjour"][i][metric]) for i in positive_ids])
                 boots = np.array([rng.choice(differences, len(differences), replace=True).mean() for _ in range(2000)])
@@ -182,7 +184,7 @@ def generate_report(output, rows, comparisons, calibrations, config, provenance,
         scenarios = sorted({r["scenario"] for r in rows if r["group"] == group and
                             ("_none" not in group or r["scenario"] in ("parity", "shared_state_ignored"))})
         for scenario in scenarios:
-            for method in METHODS:
+            for method in methods:
                 subset = [r for r in rows if r["group"] == group and r["scenario"] == scenario and r["method"] == method]
                 flags = sum(r["flag"] for r in subset)
                 low, high = wilson(flags, len(subset))
@@ -234,7 +236,9 @@ for each added method, as if run alone; shared work is computed only once when a
 
 The **three added methods** are graph components, graph Louvain, and the ML decoder. The unchanged
 `rps/detect.py` is the original Bonjour baseline. Feature/view modules are shared observation machinery,
-not additional detectors. Source revision and attribution are in [ATTRIBUTION.md](../../ATTRIBUTION.md).
+not additional detectors. The current suite also includes average-z growth adapted from
+`SkabbMask/rps-collusion` new-decoder revision `1bea281244ad2d756b9b507145b2046fefcf1582`.
+Historical four-method inputs remain four-method reports. Source revision and attribution are in [ATTRIBUTION.md](../../ATTRIBUTION.md).
 
 ### Statistics and decisions
 
@@ -253,8 +257,12 @@ not additional detectors. Source revision and attribution are in [ATTRIBUTION.md
    Missing edges contribute zero; wholly unsupported episodes abstain. Large searches use a clearly labeled greedy fallback.
 6. On an **independent honest calibration split**, calibrate each graph's maximum group score and the decoder's score.
    Freeze the thresholds before processing test games. A candidate is returned only when its score strictly exceeds its cutoff.
-   The graph methods can return several groups; the decoder returns at most one coalition.
-7. The original baseline retains reciprocal net influence and its fixed **0.05-nat** threshold. It receives all complete
+   The graph methods can return several groups; the ML and average-z growth decoders return at most one coalition.
+7. Average-z growth starts at the strongest supported pair. A player joins when its mean z to the group
+   is at least growth_frac times the current internal pair mean, recomputed after every addition.
+   The default fraction is 0.25. Its score is the seed-pair z, calibrated independently on honest episodes;
+   only accepted candidates are named. This method is included when present in the measured inputs.
+8. The original baseline retains reciprocal net influence and its fixed **0.05-nat** threshold. It receives all complete
    rounds and does not inherit the new support guards or calibration. That is a reproduction of the target baseline,
    not a claim that its false-positive rate is matched to 5%.
 
@@ -318,7 +326,7 @@ group with all within-group truth pairs. Naming rates are unconditional across p
 
 For honest/shared-state controls, flag rate is a false-positive rate; for pair/parity cases it is detection rate.
 Pair cases in this table pool CP = 0.5 and 1.0; see `comparison.csv` for separate results.
-All three new methods use pairwise evidence, so none is designed to recover pairwise-independent higher-order coalitions.
+All methods use pairwise evidence, so none is designed to recover pairwise-independent higher-order coalitions.
 History conditioning can prevent false alarms from public behavior but also remove nearly all usable data, especially
 with six players (up to 3^6 previous joint actions). Abstention is reported explicitly rather than recorded as evidence of honesty.
 
@@ -332,7 +340,7 @@ python -m unittest discover -s tests -v
 python evaluate.py --config configs/benchmark.json --output results/reproduction
 python evaluate.py --config results/benchmark/config.json --dataset results/benchmark/episodes.jsonl.gz --output results/replay
 python simulate.py --config configs/random.json
-python analyze.py --log runs/random.jsonl --calibration results/benchmark/calibration/N3_T300_none.json --output runs/detection.json
+python analyze.py --log runs/random.jsonl --calibration results/reproduction/calibration/N3_T300_none.json --output runs/detection.json
 ```
 
 Use a fresh output directory for each run. Statistical results replay deterministically with the recorded dependency

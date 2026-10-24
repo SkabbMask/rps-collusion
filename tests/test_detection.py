@@ -10,7 +10,7 @@ from rps.detect import individual_influence
 from rps.detection.decoder import decode, ml_decode
 from rps.detection.graph import clusters, edge_set
 from rps.detection.pairwise import PairwiseParams, analyse_pairwise, cmi_from_tables
-from rps.detection.pipeline import (DetectionConfig, RawResult, decisions, load_calibration,
+from rps.detection.pipeline import (CALIBRATION_SCHEMA, METHODS, DetectionConfig, RawResult, decisions, load_calibration,
                                     rank_threshold, score_methods, validate_calibration, write_json)
 from rps.game import MOVES
 from rps.observe.features import symbols
@@ -162,7 +162,8 @@ class TestCalibration(unittest.TestCase):
     def test_matching_shape_and_settings_required(self):
         cfg = DetectionConfig()
         sym = sym_from_array(np.zeros((30, 3), dtype=int))
-        cal = {"schema_version": 1, "frozen": True, "detector_config": asdict(cfg),
+        cal = {"schema_version": CALIBRATION_SCHEMA, "methods": list(METHODS),
+               "thresholds": {m: 0 for m in METHODS}, "frozen": True, "detector_config": asdict(cfg),
                "signature": {"n_players": 3, "rounds": 30, "state_mode": "recorded"}}
         validate_calibration(cal, sym, cfg)
         cal["signature"]["rounds"] = 300

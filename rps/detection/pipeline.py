@@ -1,4 +1,4 @@
-"""Public API, independent null calibration, and decisions for four methods."""
+"""Public API, independent null calibration, and decisions for five methods."""
 from __future__ import annotations
 
 import json
@@ -13,11 +13,13 @@ from rps.detect import detect as upstream_detect
 from rps.observe.features import Symbols, complete_records
 from .decoder import decode
 from .graph import clusters, edge_set
+from .growth import grow_from_top_pair
 from .pairwise import PairwiseParams, analyse_pairwise
 
-METHODS = ("bonjour", "graph_components", "graph_louvain", "decoder")
+METHODS = ("bonjour", "graph_components", "graph_louvain", "decoder", "growth")
+CALIBRATION_SCHEMA = 2
 METHOD_LABELS = {"bonjour": "Original Bonjour", "graph_components": "Graph components",
-                 "graph_louvain": "Graph Louvain", "decoder": "ML decoder"}
+                 "graph_louvain": "Graph Louvain", "decoder": "ML decoder", "growth": "Average-z growth"}
 
 
 @dataclass(frozen=True)
@@ -29,6 +31,7 @@ class DetectionConfig:
     max_exhaustive: int = 200_000
     seed: int = 20261024
     baseline_alpha: float = 0.05       # nats: unchanged target-repository default
+    growth_frac: float = 0.25         # teammate's analysis default; fixed before testing
 
     def __post_init__(self):
         PairwiseParams(self.permutations, self.min_pair_rounds, self.min_state_rounds, self.seed)
@@ -36,6 +39,8 @@ class DetectionConfig:
             raise ValueError("invalid decoder search budget")
         if not math.isfinite(self.baseline_alpha) or self.baseline_alpha <= 0:
             raise ValueError("baseline threshold must be positive and finite")
+        if not math.isfinite(self.growth_frac) or not 0 <= self.growth_frac <= 1:
+            raise ValueError("growth_frac must be finite and in [0,1]")
 
     def pairwise(self):
         return PairwiseParams(self.permutations, self.min_pair_rounds, self.min_state_rounds, self.seed)
@@ -79,6 +84,18 @@ def score_methods(sym: Symbols, cfg: DetectionConfig, edge_threshold: float, *, 
         [(frozenset(sym.names[i] for i in decoded.members), decoded.score)] if decoded else [],
         decoded is None, pair_seconds + time.perf_counter() - start,
         {"k": decoded.k, "mu": decoded.mu, "search": decoded.search, "k_scores": decoded.k_scores} if decoded else {})
+    start = time.perf_counter()
+    grown = grow_from_top_pair(evidence.z, cfg.growth_frac)
+    result["growth"] = RawResult(
+        grown.seed_z if grown else float("-inf"),
+        [(frozenset(sym.names[i] for i in grown.members), grown.seed_z)] if grown else [],
+        grown is None, pair_seconds + time.perf_counter() - start,
+        {"frac": cfg.growth_frac, "seed_pair": [sym.names[i] for i in grown.seed_pair],
+         "seed_z": grown.seed_z,
+         "added": [{"player": sym.names[i], "mean_z": mean, "threshold": cutoff}
+                   for i, mean, cutoff in grown.added],
+         "rejected": ({"player": sym.names[grown.rejected[0]], "mean_z": grown.rejected[1],
+                       "threshold": grown.rejected[2]} if grown.rejected else None)} if grown else {})
     return result, evidence
 
 
@@ -110,8 +127,11 @@ def decisions(raw, calibration):
 
 
 def validate_calibration(calibration, sym, cfg):
-    if calibration.get("schema_version") != 1 or not calibration.get("frozen"):
-        raise ValueError("unrecognised or unfrozen calibration")
+    if (calibration.get("schema_version") != CALIBRATION_SCHEMA or not calibration.get("frozen")
+            or calibration.get("methods") != list(METHODS)
+            or set(calibration.get("thresholds", {})) != set(METHODS)):
+        raise ValueError("calibration predates the five-method suite or is unfrozen/incomplete; "
+                         "rerun evaluate.py in a fresh output directory and use its calibration/*.json")
     expected = calibration["signature"]
     observed = {"n_players": sym.N, "rounds": sym.T, "state_mode": sym.state_mode}
     if expected != observed or calibration["detector_config"] != asdict(cfg):
