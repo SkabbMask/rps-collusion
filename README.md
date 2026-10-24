@@ -28,7 +28,11 @@ log again without rerunning the game:
   *other* influence, two assistants of the same primary mask each other, so it finds at most one pair.
 - **Permutation z**: for each pair, γ is compared with R shuffles of one player's moves within state
   cells. This doesn't subtract other players' influence, so coalitions larger than two stay visible.
-- **Graph clusters**: connected components of the pairs with z ≥ z_α, scored by Q = the sum of z inside.
+- **Graph clusters**: connected components of the pairs with z ≥ z_α, then pruned: a member must have at
+  least `min_links` links inside the group, each with z ≥ `link_frac` × the group's strongest z
+  (defaults 1 and 0.25). The weakest member is dropped and the counts recomputed until all qualify. This
+  keeps out an honest player who is only weakly linked to the group. A group is scored by its mean z per
+  pair (the sum would grow with group size) and accepted above the honest q_95 of the same score.
 - **Growth decoder**: start from the pair with the highest z, then repeatedly take the outside player with
   the highest summed z to the set and add it while its mean z to the set is ≥ `frac` × the mean z over
   all pairs inside the set, recomputed after every addition (`--frac`, default 0.25). Flagged when
@@ -38,11 +42,12 @@ log again without rerunning the game:
 - **Histogram view** (no identities): a G test of the per-round move counts against a multinomial. It also
   reacts to honest players with different move biases, so treat it as a weak signal on mixed line-ups.
 
-z_α and the cluster threshold q_95 are calibrated on 50 honest surrogates of the same
+z_α and the cluster threshold q_95 (with the same pruning) are calibrated on 50 honest surrogates of the same
 log (each player's moves shuffled independently within state cells, which removes any dependence), so
 each is a 5% false-alarm threshold for that episode. The relabelled view runs everything per block of
 m rounds. Ground truth (the coalitions) is written to the log's first line and is used only to score the
-result. The optional `detection` block in the config sets `R`, `n_null`, `level` and `frac`.
+result. The optional `detection` block in the config sets `R`, `n_null`, `level`, `frac`, `min_links` and
+`link_frac` (also `--min-links` / `--link-frac` on analyze.py).
 
 ## Comparing the methods
 
@@ -52,27 +57,38 @@ turn them into a verdict.
 | Method | Finds | Good at | Weak at |
 |---|---|---|---|
 | Paper rule (Γ ≥ τ) | at most one pair | a single colluding pair, as in the paper | coalitions of 3+: members mask each other, often nothing is found |
-| Graph clusters | any connected group | stars and mixed shapes; medium collusion | can absorb an honest player whose z just clears z_α |
+| Graph clusters | any connected group | stars and mixed shapes; medium collusion | an honest player as strongly linked as a colluder is kept |
 | Growth decoder | one group grown from the top pair | naming the exact coalition, especially larger ones | `frac` must suit the coalition shape (≈ 1/number of assistants) |
 | colav ML decoder (unused) | most likely k-subset | coalitions where every pair is linked (cliques) | stars: members linked only to the primary are dropped |
 | Histogram G test | yes/no, no names | needs no identities | weak; fooled by honest players with different biases |
 
 **Benchmark** ([experiments/bench_decoders.py](experiments/bench_decoders.py)): random players with
-rule-based assistants, 200 rounds, 25 episodes per cell. The table shows the fraction of episodes in which
-each method named the exact coalition, at CP = 0.2 / 0.35 / 0.5.
+rule-based assistants, 200 rounds, 25 episodes per cell. The two "roped-in" scenarios add an honest player
+D who copies assistant B's move 30% of the time (one link), or a random coalition member's 40% of the time
+(weak links to all). D is not part of the true coalition. Each cell is the fraction of episodes in which
+the method named the exact coalition, at CP = 0.2 / 0.35 / 0.5.
 
-| Coalition | colav ML decoder | Growth, frac 0.5 | Growth, frac 0.25 | Graph clusters |
-|---|---|---|---|---|
-| A + 1 assistant | 0.64 / 1.00 / 1.00 | 0.76 / 1.00 / 1.00 | 0.68 / 1.00 / 1.00 | 0.72 / 0.88 / 0.96 |
-| A + 2 assistants | 0.16 / 0.68 / 1.00 | 0.04 / 0.24 / 0.68 | 0.44 / 0.92 / 1.00 | 0.32 / 0.96 / 0.92 |
-| A + 3 assistants | 0.08 / 0.52 / 0.92 | 0.00 / 0.04 / 0.52 | 0.48 / 0.84 / 1.00 | 0.32 / 0.96 / 0.92 |
+| Coalition | colav ML decoder | Growth, frac 0.25 | Graph, unpruned | Graph, link ≥ 0.25 top | Graph, link ≥ 0.5 top |
+|---|---|---|---|---|---|
+| A + 1 assistant | 0.48 / 1.00 / 1.00 | 0.48 / 1.00 / 1.00 | 0.48 / 1.00 / 1.00 | 0.48 / 1.00 / 1.00 | 0.48 / 1.00 / 1.00 |
+| A + 2 assistants | 0.16 / 0.60 / 0.96 | 0.28 / 0.92 / 1.00 | 0.28 / 1.00 / 0.96 | **0.28 / 1.00 / 1.00** | 0.24 / 0.88 / 1.00 |
+| A + 3 assistants | 0.08 / 0.68 / 0.96 | 0.28 / 0.92 / 1.00 | 0.28 / 0.96 / 0.84 | **0.28 / 1.00 / 1.00** | 0.24 / 0.76 / 0.96 |
+| A + 2, D copies B | 0.00 / 0.32 / 0.84 | 0.00 / 0.28 / 0.84 | 0.00 / 0.08 / 0.00 | 0.00 / 0.08 / 0.44 | **0.00 / 0.32 / 0.92** |
+| A + 2, D weakly linked to all | 0.24 / 0.52 / 0.92 | 0.20 / 0.56 / 0.92 | 0.36 / 0.40 / 0.52 | 0.36 / 0.64 / **0.96** | 0.32 / **0.76** / **0.96** |
 
-The growth decoder at frac 0.25 is the most reliable at naming the coalition. Recomputing its threshold
-after each addition matters for larger coalitions: with a threshold fixed at frac × z(top pair), the
-A + 3 row drops to 0.08 / 0.52 / 0.92. Graph clusters are the best complement at medium collusion
-strength. At CP = 0.2 no method names a coalition of 3+ reliably; they mostly find its strongest pair.
-Detection itself (flagging that collusion happens) is about equal across methods. Differences of about
-±0.1 are within noise at 25 episodes.
+- **Pruning** at 0.25 × the strongest link is a free improvement: it is never worse than the unpruned graph
+  beyond noise, and it keeps a weakly linked honest player out once the collusion is clear (D linked to
+  all: 0.52 → 0.96 at CP = 0.5). At 0.5 it also removes D when D copies one member, but it starts dropping
+  real assistants in larger stars (A + 3: 0.76 at CP = 0.35).
+- **Requiring 2 links** per member (not in the table) breaks pairs and stars: assistants are linked only
+  to the primary. It found nothing at all for A + 1 and at most 0.84 elsewhere, so `min_links` stays 1.
+- **Mean z instead of the sum** changed nothing in these scenarios (one coalition each), but it stops a
+  large, weakly linked group from outscoring a small, strong one.
+- **D copying B 30% of the time is as dependent on B as an assistant at CP ≈ 0.3.** No pairwise
+  method can tell it apart at CP ≤ 0.35; pruning only helps once the real collusion is clearly stronger.
+- At CP = 0.2 no method names a coalition of 3+ reliably; they mostly find its strongest pair. Detection
+  itself (flagging that collusion happens) is about equal across methods. Differences of about ±0.1 are
+  within noise at 25 episodes.
 
 The scripted assistants always follow the signal. In the LLM runs (`llama3.2` assistants, which followed
 72–77% of signals), with 200 rounds at CP = 0.5:

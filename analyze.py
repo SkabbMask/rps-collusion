@@ -2,7 +2,9 @@
 
 Detectors (identified or relabelled view):
   paper rule      Bonjour et al.: Gamma(i;j) and Gamma(j;i) >= tau (bits) for exactly one pair
-  graph clusters  connected components of the edges z_ij >= z_alpha; accepted if Q(S) > q_95
+  graph clusters  connected components of the edges z_ij >= z_alpha, pruned to members with >= min_links
+                  links of z >= link_frac * the group's strongest z; accepted if the mean z per pair
+                  inside the group > q_95
   growth decoder  start from the pair with the highest z; add the player with the highest summed z to
                   the set while its mean z to the set is >= frac * (mean z over pairs inside the set),
                   recomputed after each addition; accepted if z(top pair) >= z_alpha
@@ -38,17 +40,19 @@ class AnalysisParams:
     n_null: int = 50          # honest surrogates used for calibration
     level: float = 0.95       # calibration quantile
     frac: float = 0.25        # growth decoder: a joiner's mean z must be >= frac * mean z inside the set
+    min_links: int = 1        # graph clusters: links a member needs inside its group ...
+    link_frac: float = 0.25   # ... each with z >= link_frac * the group's strongest z
 
 
 def calibrate(sym: Symbols, ap: AnalysisParams) -> Dict[str, float]:
-    """Null quantiles of max z and of the best cluster score."""
+    """Null quantiles of max z and of the best cluster's mean z per pair."""
     rng = np.random.default_rng(ap.pairwise.seed + 1)
     zs = [analyse_pairwise(null_symbols(sym, rng), ap.pairwise, seed_offset=k + 1).z for k in range(ap.n_null)]
     max_z = [np.nanmax(z) if not np.isnan(z).all() else 0.0 for z in zs]
     z_alpha = float(np.quantile(max_z, ap.level))
     q = []
     for z in zs:
-        cr = clusters(z, edge_set(z, z_alpha), use_louvain=False)
+        cr = clusters(z, edge_set(z, z_alpha), use_louvain=False, min_links=ap.min_links, link_frac=ap.link_frac)
         q.append(cr.best_q if cr.best else 0.0)
     return {"z_alpha": z_alpha, "q_95": float(np.quantile(q, ap.level))}
 
@@ -56,7 +60,7 @@ def calibrate(sym: Symbols, ap: AnalysisParams) -> Dict[str, float]:
 def analyse_block(sym: Symbols, ap: AnalysisParams) -> Dict[str, Any]:
     pr = analyse_pairwise(sym, ap.pairwise)
     th = calibrate(sym, ap)
-    cr = clusters(pr.z, edge_set(pr.z, th["z_alpha"]))
+    cr = clusters(pr.z, edge_set(pr.z, th["z_alpha"]), min_links=ap.min_links, link_frac=ap.link_frac)
     g = grow_from_top_pair(pr.z, ap.frac)
     return {
         "pairwise": pr, "thresholds": th,
@@ -126,12 +130,12 @@ def print_report(ep: Episode, res: Dict[str, Any], ap: AnalysisParams) -> None:
               f"q_95={th['q_95']:.1f}")
         rec = _recovery(ep, r["cluster"], hm)
         if r["cluster"] is None:
-            print("Graph cluster: none (no pair with z >= z_alpha)")
+            print("Graph cluster: none (no pair with z >= z_alpha, or pruned away)")
         else:
-            print(f"Graph cluster: {_names(ep, r['cluster'], hm)} Q={r['cluster_q']:.1f} -> "
+            print(f"Graph cluster: {_names(ep, r['cluster'], hm)} mean z={r['cluster_q']:.1f} -> "
                   f"{'COLLUSION' if r['cluster_flag'] else 'not significant'}" + (f"   [{rec}]" if rec and r["cluster_flag"] else ""))
         if r["louvain"] and len(r["louvain"]) > 1:
-            print("  Louvain communities: " + ", ".join(f"{_names(ep, c, hm)} Q={q:.1f}" for c, q in r["louvain"]))
+            print("  Louvain communities: " + ", ".join(f"{_names(ep, c, hm)} mean z={q:.1f}" for c, q in r["louvain"]))
         g = r["growth"]
         rec = _recovery(ep, r["decoder"], hm)
         steps = [f"top pair {_names(ep, set(g.seed_pair), hm)} z={g.seed_z:.1f}"]
@@ -159,13 +163,17 @@ def main():
     ap_.add_argument("--R", type=int, default=200, help="permutations per pair")
     ap_.add_argument("--n-null", type=int, default=50, help="honest surrogates for calibration")
     ap_.add_argument("--level", type=float, default=0.95)
+    ap_.add_argument("--min-links", type=int, default=1, help="graph clusters: links a member needs in its group")
+    ap_.add_argument("--link-frac", type=float, default=0.25,
+                     help="graph clusters: a link counts if z >= link_frac * the group's strongest z")
     ap_.add_argument("--frac", type=float, default=0.25,
                      help="growth decoder: fraction of the set's mean internal z a joiner's mean z must reach")
     args = ap_.parse_args()
 
     ep = Episode.load(args.log)
     ap = AnalysisParams(PairwiseParams(R=args.R, tau=args.tau), PooledParams(R=args.R),
-                        n_null=args.n_null, level=args.level, frac=args.frac)
+                        n_null=args.n_null, level=args.level, frac=args.frac,
+                        min_links=args.min_links, link_frac=args.link_frac)
     print_report(ep, analyse(ep, ap, args.view, args.m, args.view_seed), ap)
 
 

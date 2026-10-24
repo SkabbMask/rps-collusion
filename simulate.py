@@ -115,7 +115,8 @@ def report(players, ep, cfg):
     R = d.get("R", 200)
     ap = AnalysisParams(PairwiseParams(R=R, tau=cfg.get("alpha", 0.05), seed=cfg.get("seed") or 0),
                         PooledParams(R=R), n_null=d.get("n_null", 50), level=d.get("level", 0.95),
-                        frac=d.get("frac", 0.25))
+                        frac=d.get("frac", 0.25), min_links=d.get("min_links", 1),
+                        link_frac=d.get("link_frac", 0.25))
     print_report(ep, analyse(ep, ap), ap)
 
 
