@@ -108,6 +108,46 @@ def decode(z: np.ndarray, k: Optional[int], mu_oracle: Optional[float], k_max: i
     return best
 
 
+# --- growth from the strongest pair --------------------------------------------------------------
+@dataclass
+class GrowthResult:
+    members: Set[int]
+    seed_pair: Tuple[int, int]
+    seed_z: float
+    added: List[Tuple[int, float, float]]                 # (member, its mean z to the set, threshold)
+    rejected: Optional[Tuple[int, float, float]] = None   # best candidate that missed: same fields
+
+
+def grow_from_top_pair(z: np.ndarray, frac: float = 0.5) -> GrowthResult:
+    """Start from the pair with the highest z. Repeatedly take the outside player with the highest
+    summed z to the current set and add it while its mean z to the set is >= frac * (mean z over
+    all pairs inside the set); the threshold is recomputed after every addition.
+
+    Unlike the ML decoder this does not assume every pair inside the coalition is elevated, so a
+    star (assistants that each depend on the primary but not on each other) can still be grown,
+    as long as frac is low enough for the star's diluted mean. Missing z (NaN) count as 0."""
+    zz = np.nan_to_num(z, nan=0.0, posinf=1e6, neginf=-1e6)
+    N = zz.shape[0]
+    i, j = np.unravel_index(np.argmax(np.where(np.triu(np.ones((N, N), bool), 1), zz, -np.inf)), zz.shape)
+    S = [int(i), int(j)]
+    seed_z = float(zz[i, j])
+    res = GrowthResult(set(S), (int(i), int(j)), seed_z, [])
+    while len(S) < N:
+        ii, jj = np.triu_indices(len(S), 1)
+        threshold = frac * float(zz[np.array(S)[ii], np.array(S)[jj]].mean())
+        outside = [c for c in range(N) if c not in S]
+        sums = {c: float(zz[c, S].sum()) for c in outside}
+        best = max(outside, key=sums.get)
+        mean = sums[best] / len(S)
+        if mean < threshold:
+            res.rejected = (best, mean, threshold)
+            break
+        S.append(best)
+        res.added.append((best, mean, threshold))
+    res.members = set(S)
+    return res
+
+
 # --- closed forms -------------------------------------------------------------------------------
 def i_pair(alpha: float, beta: float, N: int, k: int) -> float:
     """(5.4) information one pairwise test carries about membership of that pair (bits)."""

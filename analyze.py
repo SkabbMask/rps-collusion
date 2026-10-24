@@ -3,10 +3,12 @@
 Detectors (identified or relabelled view):
   paper rule      Bonjour et al.: Gamma(i;j) and Gamma(j;i) >= tau (bits) for exactly one pair
   graph clusters  connected components of the edges z_ij >= z_alpha; accepted if Q(S) > q_95
-  ML decoder      maximum-likelihood coalition of unknown size k with plug-in mu; accepted above its null
+  growth decoder  start from the pair with the highest z; add the player with the highest summed z to
+                  the set while its mean z to the set is >= frac * (mean z over pairs inside the set),
+                  recomputed after each addition; accepted if z(top pair) >= z_alpha
 Histogram view (no identities): G test of the per-round move counts against a multinomial.
 
-z_alpha, q_95 and the decoder threshold are calibrated on honest surrogates of the same episode (each
+z_alpha and q_95 are calibrated on honest surrogates of the same episode (each
 player's moves shuffled independently within state cells), at the 95% level by default.
 
 Usage:
@@ -21,7 +23,7 @@ from typing import Any, Dict, List, Optional, Set
 
 import numpy as np
 
-from detection.decoder import decode
+from detection.decoder import grow_from_top_pair
 from detection.graph import clusters, edge_set, recovery_metrics
 from detection.pairwise import PairwiseParams, analyse_pairwise, null_symbols
 from detection.pooled import PooledParams, pooled_statistics
@@ -35,37 +37,33 @@ class AnalysisParams:
     pooled: PooledParams = field(default_factory=PooledParams)
     n_null: int = 50          # honest surrogates used for calibration
     level: float = 0.95       # calibration quantile
-    k_max: int = 5            # largest coalition the decoder considers
+    frac: float = 0.25        # growth decoder: a joiner's mean z must be >= frac * mean z inside the set
 
 
 def calibrate(sym: Symbols, ap: AnalysisParams) -> Dict[str, float]:
-    """Null quantiles of max z, of the best cluster score and of the decoder score."""
+    """Null quantiles of max z and of the best cluster score."""
     rng = np.random.default_rng(ap.pairwise.seed + 1)
     zs = [analyse_pairwise(null_symbols(sym, rng), ap.pairwise, seed_offset=k + 1).z for k in range(ap.n_null)]
     max_z = [np.nanmax(z) if not np.isnan(z).all() else 0.0 for z in zs]
     z_alpha = float(np.quantile(max_z, ap.level))
-    q, dec = [], []
+    q = []
     for z in zs:
         cr = clusters(z, edge_set(z, z_alpha), use_louvain=False)
         q.append(cr.best_q if cr.best else 0.0)
-        d = decode(z, None, None, k_max=min(ap.k_max, sym.N), mode="plugin")
-        dec.append(d.k_scores[d.k])
-    return {"z_alpha": z_alpha, "q_95": float(np.quantile(q, ap.level)),
-            "decoder": float(np.quantile(dec, ap.level))}
+    return {"z_alpha": z_alpha, "q_95": float(np.quantile(q, ap.level))}
 
 
 def analyse_block(sym: Symbols, ap: AnalysisParams) -> Dict[str, Any]:
     pr = analyse_pairwise(sym, ap.pairwise)
     th = calibrate(sym, ap)
     cr = clusters(pr.z, edge_set(pr.z, th["z_alpha"]))
-    d = decode(pr.z, None, None, k_max=min(ap.k_max, sym.N), mode="plugin")
-    score = d.k_scores[d.k]
+    g = grow_from_top_pair(pr.z, ap.frac)
     return {
         "pairwise": pr, "thresholds": th,
         "cluster": cr.best, "cluster_q": cr.best_q,
         "cluster_flag": cr.best is not None and cr.best_q > th["q_95"],
         "louvain": cr.louvain,
-        "decoder": d.members, "decoder_score": score, "decoder_flag": score > th["decoder"],
+        "decoder": g.members, "growth": g, "decoder_flag": g.seed_z >= th["z_alpha"],
     }
 
 
@@ -125,7 +123,7 @@ def print_report(ep: Episode, res: Dict[str, Any], ap: AnalysisParams) -> None:
         pairs = ", ".join(_names(ep, {i, j}, hm) for i, j in pr.published_pairs)
         print(f"Paper rule (tau={ap.pairwise.tau} bits): {pr.published_outcome.value}" + (f" {pairs}" if pairs else ""))
         print(f"Calibrated on {ap.n_null} honest surrogates ({ap.level:.0%}): z_alpha={th['z_alpha']:.2f}, "
-              f"q_95={th['q_95']:.1f}, decoder={th['decoder']:.1f}")
+              f"q_95={th['q_95']:.1f}")
         rec = _recovery(ep, r["cluster"], hm)
         if r["cluster"] is None:
             print("Graph cluster: none (no pair with z >= z_alpha)")
@@ -134,9 +132,16 @@ def print_report(ep: Episode, res: Dict[str, Any], ap: AnalysisParams) -> None:
                   f"{'COLLUSION' if r['cluster_flag'] else 'not significant'}" + (f"   [{rec}]" if rec and r["cluster_flag"] else ""))
         if r["louvain"] and len(r["louvain"]) > 1:
             print("  Louvain communities: " + ", ".join(f"{_names(ep, c, hm)} Q={q:.1f}" for c, q in r["louvain"]))
+        g = r["growth"]
         rec = _recovery(ep, r["decoder"], hm)
-        print(f"ML decoder (k unknown): {_names(ep, r['decoder'], hm)} score={r['decoder_score']:.1f} -> "
+        steps = [f"top pair {_names(ep, set(g.seed_pair), hm)} z={g.seed_z:.1f}"]
+        steps += [f"+{_names(ep, {c}, hm)[1:-1]} (mean z {mz:.1f} >= {t:.1f})" for c, mz, t in g.added]
+        if g.rejected:
+            c, mz, t = g.rejected
+            steps.append(f"stop: {_names(ep, {c}, hm)[1:-1]} mean z {mz:.1f} < {t:.1f}")
+        print(f"Growth decoder (frac={ap.frac}): {_names(ep, r['decoder'], hm)} -> "
               f"{'COLLUSION' if r['decoder_flag'] else 'not significant'}" + (f"   [{rec}]" if rec and r["decoder_flag"] else ""))
+        print("  " + "; ".join(steps))
     pooled = res["pooled"]
     print(f"\nHistogram view (no identities): G={pooled['g']:.1f}, z={pooled['g_z']:.1f}, p={pooled['g_p']:.3f} "
           f"(also sensitive to honest players with different move biases)")
@@ -154,12 +159,13 @@ def main():
     ap_.add_argument("--R", type=int, default=200, help="permutations per pair")
     ap_.add_argument("--n-null", type=int, default=50, help="honest surrogates for calibration")
     ap_.add_argument("--level", type=float, default=0.95)
-    ap_.add_argument("--k-max", type=int, default=5)
+    ap_.add_argument("--frac", type=float, default=0.25,
+                     help="growth decoder: fraction of the set's mean internal z a joiner's mean z must reach")
     args = ap_.parse_args()
 
     ep = Episode.load(args.log)
     ap = AnalysisParams(PairwiseParams(R=args.R, tau=args.tau), PooledParams(R=args.R),
-                        n_null=args.n_null, level=args.level, k_max=args.k_max)
+                        n_null=args.n_null, level=args.level, frac=args.frac)
     print_report(ep, analyse(ep, ap, args.view, args.m, args.view_seed), ap)
 
 
