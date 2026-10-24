@@ -1,9 +1,8 @@
-"""Relative average-z growth from SkabbMask/rps-collusion new-decoder.
+"""Grow one group from its strongest pair using relative average z.
 
-Adapted from grow_from_top_pair at 1bea281244ad2d756b9b507145b2046fefcf1582.
-This selects one candidate group. Its strongest-pair score must independently
-pass honest episode calibration before the candidate is named as a detection.
-"""
+Adapted from grow_from_top_pair at revision
+1bea281244ad2d756b9b507145b2046fefcf1582. Separate honest calibration
+sets the seed-score cutoff before a group is reported."""
 from dataclasses import dataclass, field
 import math
 

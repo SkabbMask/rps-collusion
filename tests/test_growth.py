@@ -56,8 +56,8 @@ class TestAverageZGrowth(unittest.TestCase):
             with self.assertRaises(ValueError):
                 grow_from_top_pair(invalid)
 
-    def test_matches_pinned_teammate_fixtures(self):
-        fixture = json.loads((Path(__file__).parent / "fixtures/teammate_growth.json").read_text())
+    def test_matches_pinned_upstream_fixtures(self):
+        fixture = json.loads((Path(__file__).parent / "fixtures/upstream_growth.json").read_text())
         for case in fixture["cases"]:
             result = grow_from_top_pair(np.asarray(case["z"], dtype=float), case["frac"])
             self.assertEqual(sorted(result.members), case["members"])

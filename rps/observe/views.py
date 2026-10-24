@@ -1,11 +1,8 @@
-"""RPS observation views adapted from colav/observe/views.py.
+"""Build the six RPS observations.
 
-There is no price or valuation analogue in RPS. Only explicitly logged
-public ``messages`` enter full/metadata; ``signalled`` remains private.
-Relabelled blocks have distinct pseudonyms; they must never be concatenated
-as if a column represented one persistent player. Hidden maps are returned
-separately for evaluation, never attached to a detector's Symbols object.
-"""
+Only recorded public messages enter full/metadata. Private signals are excluded.
+Pseudonyms are local to each block; identity maps are returned separately
+for evaluation. Adapted from COLAV; see ATTRIBUTION.md."""
 from __future__ import annotations
 
 from dataclasses import dataclass

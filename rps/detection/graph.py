@@ -1,10 +1,7 @@
-"""The two graph detectors from colav/detect/graph.py, on RPS evidence.
+"""Find groups using connected components or Louvain.
 
-Candidates are connected components or weighted Louvain communities of
-the thresholded dependence graph. Q is the sum of supported internal z's.
-An independent calibration split sets a cutoff on the *largest* Q found
-in an honest episode, accounting for the search over candidate groups.
-"""
+Group scores sum their observed internal z values. Separate honest calibration
+sets the final cutoff for the largest group score in an episode."""
 from __future__ import annotations
 
 from dataclasses import dataclass

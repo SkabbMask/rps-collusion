@@ -1,11 +1,4 @@
-"""Run an N-player iterated RPS collusion simulation between LLM players and detect collusion.
-
-Experiment settings live in config.json; machine-specific endpoints live in .env; CLI flags override both.
-
-Usage:
-    python simulate.py
-    python simulate.py --config config.json --rounds 200 --cp 0.5 -v
-"""
+"""Run an RPS game. JSON configs set players; .env sets endpoints; CLI flags override both."""
 
 import argparse
 import json

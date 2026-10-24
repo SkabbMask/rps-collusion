@@ -15,6 +15,8 @@ def main():
     source.add_argument("--dataset", help="replay a previously exported episodes.jsonl[.gz]")
     source.add_argument("--manifest", help="manifest of labeled upstream JSONL logs and honest calibration logs")
     parser.add_argument("--no-save-dataset", action="store_true")
+    parser.add_argument("--allow-repeated-observations", action="store_true",
+                        help="allow identical outcomes from independently collected games; IDs must remain unique")
     args = parser.parse_args()
     cfg = json.loads(Path(args.config).read_text(encoding="utf-8"))
     for key in ("n_edge_fit", "n_calibration", "n_test"):
@@ -30,7 +32,8 @@ def main():
         episodes, source_name = manifest_episodes(args.manifest), "external labeled logs"
     else:
         episodes, source_name = generated_episodes(cfg), "target simulator random backend + explicit synthetic stress models"
-    evaluate(episodes, cfg, args.output, save_dataset=not args.no_save_dataset, source=source_name)
+    evaluate(episodes, cfg, args.output, save_dataset=not args.no_save_dataset, source=source_name,
+             allow_repeated_observations=args.allow_repeated_observations)
     print(f"Report: {args.output}/report.md")
 
 

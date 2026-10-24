@@ -1,6 +1,6 @@
-# RPS auditor views: information-theoretic report
+# Information by observation view
 
-The label C is the binary honest/coalition mechanism with equal class priors. It is not coalition membership, intent, or LLM compliance.
+C means whether the configured coordination mechanism is active, with equal label priors. It does not identify intent or membership.
 
 | View | Auditor observation |
 | --- | --- |
@@ -13,7 +13,7 @@ The label C is the binary honest/coalition mechanism with equal class priors. It
 
 Private signals, prompts, policy distributions and ground truth are excluded from views. Missing message instrumentation is unknown; an explicitly recorded empty string is silence.
 
-## Exact small-model limits
+## Exact small model
 
 N=3, T=3, CP=0.5, relabel interval=1. H0 is independent uniform play. H1 chooses an ordered primary/helper pair uniformly once per episode; the helper assists independently with probability CP in each round. Both channels have explicit public silence. These are model calculations, not LLM results.
 
@@ -30,17 +30,17 @@ Relabelled enumeration uses column-history orbits, sufficient for the specified 
 | summaries | 0.140089 | 0.429955 | 0.026796 | 0.190089 | 0.082412 |
 | metadata | 0.204390 | 0.397805 | 0.047692 | 0.254390 | 0.116710 |
 
-Full and metadata equal identified here because messages are observed silence. This equality says nothing about informative model-generated messages. With relabel interval 1, the relabelled observation is equivalent to the histogram.
+Empty messages make full and metadata equal identified in this model. At relabel interval 1, relabelled equals histogram.
 
-## Held-out empirical bounds
+## Bounds from test games
 
 6253 episodes. Family confidence: 95.0%; target honest FPR α=0.05. Relabel interval=25.
 
-Fixed feature maps feed an anomaly detector whose centre and diagonal scale are fitted only on honest edge_fit episodes. A strict rank cutoff is frozen from separate honest calibration episodes. Test labels are used only to calculate the report. No detector is selected on test outcomes.
+Each view has fixed features and an anomaly detector fitted on honest games. Separate honest games set its threshold before test labels are used.
 
 Simultaneous Clopper–Pearson intervals (Bonferroni across all comparisons and both rate tails) give d=max(0, lower(TPR)−upper(FPR)). Then TV(P0^V,P1^V)≥d, I(C;V)≥1−h₂((1−d)/2), and Bayes error≤(1−d)/2, at the stated family confidence. I(C;D) from sample TPR/FPR is a separate plug-in estimate, not a confidence bound.
 
-These are lower bounds through lossy view features, not estimates of all information in a view. Zero does not establish absence of information. Lower bounds need not respect the ordering of true information across richer/poorer views. A TV lower bound cannot supply a power upper bound.
+These are lower bounds through particular features and detectors. Zero does not prove no information, and differing bounds do not rank the views. A TV lower bound cannot give a power upper bound.
 
 | Group | Scenario | CP | View | TPR | FPR | TV lower | MI lower, bits | I(C;D) estimate | Bayes error upper |
 | --- | --- | ---: | --- | ---: | ---: | ---: | ---: | ---: | ---: |
@@ -263,4 +263,4 @@ Assumptions: independent episodes within each arm, independently known labels, m
 
 ## Scope
 
-The exact model and the empirical population are separate experiments. There is no general finite-sample upper bound on view information from these trajectories. No KDE estimate, asymptotic nearest-neighbour bracket, membership/Fano claim, or extrapolated round requirement is presented as a certified finite-sample limit. Anonymous counts have a fixed-sum constraint; dependence between count streams alone is not evidence of collusion. The empirical detector is calibrated against honest count distributions.
+The exact model and measured bounds are separate experiments. Neither establishes a general limit for LLM detection. Count streams are dependent even under honest play, so the comparison must use matching honest games. See docs/INFORMATION.md for details.

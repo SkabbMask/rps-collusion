@@ -1,8 +1,7 @@
-"""Fixed, label-free feature maps of auditor observations, not sufficient statistics.
+"""Fixed features of each observation view.
 
-Information in a frozen detector of these features lower-bounds information
-in its view. Poor features cannot establish that the view has little information.
-"""
+These discard information. A detector on them can lower-bound view information,
+but a weak detector does not establish that the view has little information."""
 import gzip
 import hashlib
 import json

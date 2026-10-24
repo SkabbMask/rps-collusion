@@ -1,232 +1,135 @@
-# Using and extending RPS collusion detection
+# Detection methods
 
-For the complete five-method experiment, use [RUNNING.md](RUNNING.md).
-The average-z `growth` method requires fresh schema-2 calibration; historical
-four-method files in `results/benchmark/calibration` are not compatible.
+For commands, see [RUNNING.md](RUNNING.md). `analyze.py` applies the five
+methods below to a saved game. `evaluate.py` calibrates them on honest games
+and measures performance on separate test games.
 
-## Layout and method interpretation
+| Method | How it selects a group |
+| --- | --- |
+| Bonjour | Pairs whose mutual dependence exceeds that of the other players |
+| Graph components | Connected groups of unusually dependent pairs |
+| Graph Louvain | Communities within the same dependence graph |
+| ML decoder | The group with the best estimated likelihood score |
+| Average-z growth | Start with the strongest pair and add players with enough average dependence to the group |
 
-```text
-rps/observe/features.py       JSONL/tuple records -> categorical Symbols
-rps/observe/views.py          identified / pseudonym blocks / histogram / summaries
-rps/detection/pairwise.py     conditional MI and state-stratified permutation evidence
-rps/detection/graph.py        connected-components and Louvain detectors
-rps/detection/decoder.py      plug-in maximum-likelihood coalition decoder
-rps/detection/growth.py       strongest-pair relative average-z growth
-rps/detection/pipeline.py     calibrated, threshold-gated decisions
-rps/benchmark/data.py         simulator-backed datasets and external-log import
-rps/benchmark/evaluate.py     independent edge-fit/calibration/test evaluation
-rps/benchmark/metrics.py      detection, recovery and confidence intervals
-rps/benchmark/report.py       measured-result tables, figures and Markdown
-```
+The graph methods can return several groups. ML and growth return one.
+All use pairwise action dependence, so purely higher-order coordination can
+be missed. Dependence can also come from an omitted public cause.
 
-The requested graph file implements two extractors. Together with its decoder these are the
-three COLAV detection methods. Average-z growth is a separate fifth method alongside the original baseline. `features.py` and `views.py` provide observations; they do not
-implement independent classifiers. Supporting pairwise code is also adapted because both the
-graph and decoder require a standardized dependence matrix. The original Bonjour implementation
-remains a baseline, preserving its natural-log units and 0.05 threshold.
+## Scores and thresholds
 
-## Installation and reproducibility
+Pair evidence is conditional mutual information, `I(A_i; A_j | S)`, in nats.
+One player's moves are shuffled within each state to estimate the honest
+reference mean and standard deviation. The z-score measures the observed
+value relative to that reference. By default, each pair needs 20 observations
+and each retained state needs 10. Missing pairs remain undefined.
 
-Python >= 3.10 is required; the recorded run uses Python 3.12. The original simulator can still
-run without third-party packages when no new detector is requested.
+Calibration uses three separate datasets:
 
-```bash
-python -m pip install -r requirements-detection.txt
-python -m unittest discover -s tests -v
-python evaluate.py --config configs/benchmark.json --output results/full-detection-growth
-```
+1. `edge_fit`: honest games used to set the graph's pair threshold.
+2. `calibration`: honest games used to set each method's final score threshold.
+3. `test`: honest and coalition games used only to measure results.
 
-`requirements-evaluated.txt` records the numerical package versions used for the delivered
-benchmark. `provenance.json` records the actual interpreter, packages, configuration hash and
-canonical dataset hash. Different numerical/library versions can affect borderline thresholds
-or Louvain partitions, even with fixed seeds.
+Thresholds use rank `ceil((n+1)*(1-alpha))` with strict exceedance. Fewer than
+19 calibration games cannot produce a nontrivial 5% cutoff. The 5% target
+holds marginally when future honest games and calibration games are
+exchangeable; it is not a promise for every fitted threshold or new population.
+Combining several methods with an OR rule needs its own calibration.
 
-Each evaluation writes an exported `episodes.jsonl.gz`. Re-evaluate those exact trajectories:
+Bonjour retains the original 0.05-nat rule rather than using this calibration.
+The saved permutation p-values describe individual pairs; final decisions use
+episode-level thresholds that account for the search across groups.
 
-```bash
-python evaluate.py --config results/benchmark/config.json \
-  --dataset results/benchmark/episodes.jsonl.gz --output results/replayed
-```
+## Average-z growth
 
-Rebuild only plots/tables/Markdown from already measured predictions, without changing decisions:
+Growth starts with the strongest observed pair. The next player is the one
+with the highest mean z to the group. It joins if that mean is at least
+`growth_frac` times the group's current internal mean. Recompute after each
+addition. The default fraction is 0.25; fix it before evaluating test data.
 
-```bash
-python -m rps.benchmark.report --results results/benchmark
-```
+Missing links contribute zero to these means. An entirely unobserved episode
+abstains. The detection score is the seed pair's z, so growth changes group
+membership, not the underlying max-pair detection decision. JSON `details`
+records additions and the first rejected player; only `groups` lists detections.
 
-Choose a new output directory for an evaluation. This avoids silently overwriting a completed
-report. Failed/incomplete output directories are diagnostic artifacts, not finished results.
+Current calibration files use schema 2 and contain all five methods.
+Recalibrate after changing detector settings. Four-method files in
+`results/benchmark/calibration` are historical and cannot be used directly.
 
-## Analyse a single game
+## States and observations
 
-```bash
-python simulate.py --config configs/random.json
-python analyze.py --log runs/random.jsonl \
-  --calibration results/full-detection-growth/calibration/N3_T300_none.json \
-  --output runs/detection.json
-```
+- `none`: ignore state; appropriate for the memoryless scripted players.
+- `last_round`: condition on the previous joint action. This can become sparse:
+  six players have up to 729 previous-action states.
+- `recorded`: use the log's supplied state. It must be public and known before
+  the current actions; this is the caller's responsibility.
 
-Or run it immediately after simulation:
+Do not use current payoffs, private signals or sampled policies as state.
+Action features ignore `signalled`, `truth`, `roles`, `policies` and `payoffs`.
+Missing or null actions are masked; unknown move strings are rejected.
+Bonjour uses complete rounds; the other methods use pairwise-complete rounds.
 
-```bash
-python simulate.py --config configs/random.json \
-  --calibration results/full-detection-growth/calibration/N3_T300_none.json \
-  --detection-output runs/detection.json
-```
+Named, relabelled, histogram and summary observations are in `rps/observe/`.
+Do not join pseudonym columns across blocks as if they were the same player.
+The [information experiment](INFORMATION.md) also supports public-message views.
+The five coalition detectors themselves require identified actions, or a
+single relabelled block with matching calibration.
 
-CLI output names flagged groups or says `no flag` / `insufficient evidence`. JSON includes the
-evidence matrix, support, permutation p values, scores, abstention state and accepted groups.
-The standalone analysis API never needs coalition labels or private signals.
+## Evaluate recorded games
 
-```python
-from rps.observe.features import load_jsonl, symbols
-from rps.detection.pipeline import detect_episode, load_calibration
-
-cal = load_calibration("results/full-detection-growth/calibration/N3_T300_none.json")
-view = symbols(load_jsonl("runs/random.jsonl"), state_mode="none")
-decisions, evidence = detect_episode(view, cal)
-print(decisions["decoder"]["groups"])
-```
-
-A decoder candidate is not returned as a detected coalition until it passes the independently
-calibrated threshold. The result's `details.k` describes the best candidate even if it was rejected;
-only `groups` is a thresholded identification. A dependence flag is not a posterior probability
-or proof of intent. The ML decoder assumes one dense coalition; average-z growth also returns at most one group. Graph methods may return several.
-
-## Public state and missing observations
-
-- `none`: one state; suitable for the benchmark's memoryless random policies.
-- `last_round`: the previous joint action, in sorted player order; up to 3^N cells plus the initial state.
-- `recorded`: the supplied `state` field, which must represent information available **before** actions.
-
-No action-code arithmetic is used to claim that paper is numerically greater than rock. The
-public-state cardinality is learned from the data; the auction model's four-cell assumption is gone.
-Unknown move strings fail validation. Missing keys or explicit `null` actions are masked. Sparse
-state support is calculated separately for each pair, after both-player observation masking.
-The baseline runs on complete rows; added methods can use pairwise-complete rows.
-
-Do not condition on the current joint action, payoff, hidden signal, or policy generated after
-receiving a private signal: this can remove the dependence one is trying to detect or leak labels.
-The code intentionally ignores `signalled`, `truth`, `roles`, `policies`, and `payoffs` in features.
-The recorded-state mode cannot automatically verify that a caller's state really is public and pre-action.
-
-Constant strategies provide no dependence information and yield z=0. Unsupported pairs are NaN.
-The decoder treats missing edges as zero evidence; fully unsupported episodes abstain.
-There is no post-hoc imputation from true membership. Unknown/partial identities cannot be safely
-inferred from the same behavior and then treated as independently observed identities.
-
-## Observation views
-
-`identified_view(records)` exposes persistent named categorical actions. `histogram_view(sym)`
-returns only per-round counts of rock, paper and scissors. `summary_view(sym)` returns categorical
-move entropy, the largest move fraction, and whether a complete round contains one or three
-distinct moves. These contain no invented auction-price fields.
-
-`relabelled_view(sym, m, seed)` returns `(public_view, evaluator_maps)`. Every block has distinct
-pseudonyms and its own Symbols. Because RPS actions are observed directly, the first move in a
-block remains valid; auction price differences could not do that. Last-round states are rebuilt
-within the block and reset at boundaries. `recorded` state is rejected for this view because an
-opaque recorded state might itself leak persistent identity. All detector functions require an
-identified Symbols object. Analyse a block at its own calibrated length; do not concatenate
-pseudonym columns across blocks. Episode-wise false-positive control when scanning many blocks
-needs its own calibration over the maximum block score. This is not supplied by a single-block cutoff.
-
-The separate [information experiment](INFORMATION.md) additionally supports full and
-metadata views of explicitly recorded public messages. The RPS logs' `signalled` field
-remains private experiment instrumentation and is never a public message observation.
-
-## Evaluate real/LLM logs with ground truth
-
-Generate independent episodes with the original simulator and retain their JSONL files. Build a
-manifest separating **known honest edge-fit**, **known honest calibration**, and **held-out test**
-episodes. Every group must have the same N, T, state definition, and honest population. All labels
-must come from experimental configuration or independent annotation, never the detector being evaluated.
-
-Manifest structure (illustrative filenames; extend the episode lists to the desired sample sizes):
+A manifest supplies independent labels and paths to JSONL logs. Paths are
+relative to the manifest. This example shows the format; it is too small for
+useful calibration or confidence bounds.
 
 ```json
 {
   "groups": {
-    "ollama3_T300": {"state_mode": "last_round", "population": "your-model-and-honest-policy-version"}
+    "qwen3_T200": {
+      "state_mode": "none",
+      "population": "qwen2.5:14b, fixed prompts and message settings"
+    }
   },
   "episodes": [
-    {"id": "fit-001", "group": "ollama3_T300", "split": "edge_fit",
-     "path": "logs/fit-001.jsonl", "truth": [], "scenario": "honest"},
-    {"id": "cal-001", "group": "ollama3_T300", "split": "calibration",
-     "path": "logs/cal-001.jsonl", "truth": [], "scenario": "honest"},
-    {"id": "test-honest-001", "group": "ollama3_T300", "split": "test",
-     "path": "logs/test-honest-001.jsonl", "truth": [], "scenario": "honest"},
-    {"id": "test-pair-001", "group": "ollama3_T300", "split": "test",
-     "path": "logs/test-pair-001.jsonl", "truth": [["A", "B"]], "scenario": "pair", "cp": 0.5}
+    {"id":"fit-001","group":"qwen3_T200","split":"edge_fit","path":"logs/fit-001.jsonl","truth":[],"scenario":"honest"},
+    {"id":"cal-001","group":"qwen3_T200","split":"calibration","path":"logs/cal-001.jsonl","truth":[],"scenario":"honest"},
+    {"id":"test-honest-001","group":"qwen3_T200","split":"test","path":"logs/test-honest-001.jsonl","truth":[],"scenario":"honest"},
+    {"id":"test-pair-001","group":"qwen3_T200","split":"test","path":"logs/test-pair-001.jsonl","truth":[["A","B"]],"scenario":"pair","cp":0.5}
   ]
 }
 ```
 
+Use `truth: []` only for known honest games. `[["A","B"],["C","D"]]` denotes
+two separate pairs. Labels must come from the experiment or independent
+annotation, not from the detector. State whether they mean an instructed
+agreement, an active signal mechanism, or observed compliance.
+
 ```bash
-python evaluate.py --manifest manifest.json --config configs/benchmark.json --output results/llm-evaluation
+python evaluate.py --manifest manifest.json --config configs/benchmark.json \
+  --output results/my-llm-evaluation
 ```
 
-Paths are resolved relative to the manifest. Numerical detection settings and alpha come from the
-config, while generation settings/sample counts are ignored for imported logs. Each manifest entry
-must explicitly specify `truth`; absence does not silently imply an honest episode. `[]` means
-known honest. `[["A", "B", "C"]]` means one three-player group; `[["A", "B"], ["C", "D"]]`
-means two distinct groups. Report labels should identify whether these denote configured intent,
-an active covert mechanism, or independently verified behavior. Those are different estimands.
+Keep player count, rounds, models, prompts and honest policy distribution
+consistent within a group. Matching shape alone does not make the scripted
+calibration valid for LLM logs. Duplicate IDs and observed trajectories are
+rejected. Shuffling assumptions can fail for adaptive, time-dependent policies.
 
-At least 19 honest null samples are necessary for a nontrivial strict 5% rank threshold; 199 are
-used in the delivered main calibration. The short four-entry example above is a schema example,
-not a sufficient evaluation. With too few calibration episodes thresholds are infinite and the
-added detectors do not flag. Edge-fit data are independent from score-calibration data, which are
-independent from held-out test data. Duplicate IDs and duplicate observable trajectories are rejected.
+## Outputs and code
 
-The checked-in calibration is **for random/scripted policies**. An equal log length and player count
-are not sufficient to justify applying it to an Ollama model. Shape and config mismatches are enforced;
-matching the honest policy distribution, state semantics and exchangeability assumptions is the caller's responsibility.
+`predictions.csv` contains test decisions. `comparison.csv` groups results by
+scenario and signal probability. `summary.csv` summarizes the main mixture.
+`exact_groups` requires the full set of groups to match; `exact_members`
+compares their union. Recovery metrics count missed detections as failures.
+Precision and F1 depend on the mixture of honest and coalition games.
 
-## Metrics
+Code is split between `rps/observe/` (log conversion), `rps/detection/`
+(scores and decisions), and `rps/benchmark/` (datasets, evaluation and reports).
+Source revisions are listed in [ATTRIBUTION.md](../ATTRIBUTION.md).
 
-`comparison.csv` contains per-group/scenario/CP confusion counts, precision, recall, F1, balanced
-accuracy, AUROC, average precision, Wilson intervals, abstention, and naming metrics. The same
-matched honest test set is reused as a reference for each alternative, but appears only once in
-the headline aggregate false-positive rate. It must not be counted multiple times when estimating
-uncertainty across scenarios. The report compares AUROC within conditions and averages those values;
-raw scores across differing calibrations are not directly comparable.
+For automatic model data collection, see the batch commands in
+[RUNNING.md](RUNNING.md#full-qwen-experiment). They record per-game seeds, model
+digests, log hashes, signal compliance and parsing failures.
 
-`exact_groups` compares the full unordered set of groups; `exact_members` compares their union.
-Jaccard uses the union of named players. Pair precision/recall/F1 use every within-group unordered
-pair. Naming metrics include all positive episodes; a missed detection or abstention is a recovery
-failure. Timing measures analysis only, excluding game generation; each method's reported standalone
-time includes any shared permutation evidence it needs.
-
-Permutation p values are diagnostic per-pair values, not automatically multiplicity-corrected
-decisions. Decisions use calibrated episode-level maxima. Likewise OR-combining the three methods
-requires separately calibrated ensemble control; do not assume each 5% rule yields a 5% combined rule.
-
-## Known limits
-
-Conditional independence is not the same as absence of collusion, and dependence is not proof of
-intent. Higher-order-only dependence can evade all pairwise methods. Shared omitted public causes
-can trigger all of them. Fine-grained state can make data too sparse, especially with many players.
-Residual temporal dependence can invalidate within-state shuffles. The report includes explicit
-stress tests for each of these practical concerns except arbitrary temporal-policy distributions.
-
-## Average-z growth method
-
-The fifth method (`growth`) adapts the teammate's `new-decoder` algorithm. It
-starts from the strongest supported pair, then repeatedly joins the player
-with highest average z to the current group while that average is at least
-`growth_frac` times the group's current internal mean. Defaults use 0.25,
-fixed before calibration/testing. Missing edges count as zero in means; fully
-unsupported episodes abstain. No true coalition size is supplied.
-
-The candidate score is the seed-pair z. Independent honest calibration sets
-a strict episode-level acceptance cutoff. A candidate only appears in `groups`
-after exceeding that cutoff. `details` provides the seed, additions, rejected
-joiner and relative thresholds as a diagnostic candidate trace.
-
-Calibration schema 2 records all five methods and `growth_frac`. Rerun
-`evaluate.py` with a fresh output directory, or replay an existing dataset,
-then use the new calibration for `analyze.py`/`simulate.py --calibration`.
-Changing `growth_frac` requires recalibration; do not tune it on test results.
-The six information-view algorithms and `information.py` CLI are unchanged.
+Identical observations are rejected by default as a leakage check. Independent
+model games can legitimately repeat, so the collector uses
+`--allow-repeated-observations` for analysis and records the repetition count.
+This does not permit duplicate IDs or justify analyzing copied logs as fresh data.

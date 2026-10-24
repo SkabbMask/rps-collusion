@@ -23,6 +23,8 @@ def main():
     parser.add_argument("--relabel-interval", type=int, default=25)
     parser.add_argument("--delta", type=float, default=0.05, help="family confidence error probability")
     parser.add_argument("--exact-only", action="store_true")
+    parser.add_argument("--allow-repeated-observations", action="store_true",
+                        help="allow identical outcomes from independently collected games; IDs must remain unique")
     parser.add_argument("--exact-rounds", type=int, default=3)
     parser.add_argument("--exact-cp", type=float, default=0.5)
     parser.add_argument("--exact-relabel-interval", type=int, default=1)
@@ -50,7 +52,8 @@ def main():
                 parser.error("alternative CP values must be in (0,1]")
             episodes, source_name = generated_episodes(cfg), "scripted RPS; optional explicitly observed public silence"
         empirical = evaluate_views(episodes, output, m=args.relabel_interval, alpha=alpha,
-                                   delta=args.delta, seed=cfg["seed"])
+                                   delta=args.delta, seed=cfg["seed"],
+                                   allow_repeated_observations=args.allow_repeated_observations)
         empirical["source"] = source_name
         write_json(output / "information.json", empirical)
     output.mkdir(parents=True, exist_ok=True)

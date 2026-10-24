@@ -1,11 +1,8 @@
-"""Maximum-likelihood coalition decoder adapted from colav/detect/decoder.py.
+"""Search for one coalition using a Gaussian working score.
 
-Working likelihood: mu * sum(z_ij in S) - mu^2/2 * C(k,2).
-Unknown k is chosen by subtracting ln C(N,k), using the source's plug-in mu
-(mean of the strongest C(k,2) edges, floored at 1e-6). The Gaussian model
-is a scoring heuristic, not a claim that overlapping pair scores are iid.
-An independent honest calibration is required before naming a coalition.
-"""
+Score: mu * sum(z_ij) - mu^2/2 * C(k,2) - ln C(N,k). Mu is estimated
+from the strongest edges. This is a heuristic score, not a posterior probability.
+Adapted from COLAV; see ATTRIBUTION.md."""
 from __future__ import annotations
 
 import math
@@ -80,7 +77,7 @@ def ml_decode(z, k, mu, max_exhaustive=200_000):
 
 
 def decode(z, k=None, *, k_max=5, max_exhaustive=200_000):
-    """Deployable plug-in decoder: no true k, true members or oracle mu needed."""
+    """Estimate one group without knowing its size or members."""
     z = validate_matrix(z)
     if k_max < 2 or (k is not None and (not isinstance(k, int) or not 2 <= k <= len(z))):
         raise ValueError("invalid coalition size/search range")

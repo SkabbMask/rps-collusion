@@ -31,7 +31,7 @@ class DetectionConfig:
     max_exhaustive: int = 200_000
     seed: int = 20261024
     baseline_alpha: float = 0.05       # nats: unchanged target-repository default
-    growth_frac: float = 0.25         # teammate's analysis default; fixed before testing
+    growth_frac: float = 0.25         # Relative join cutoff; fix before testing
 
     def __post_init__(self):
         PairwiseParams(self.permutations, self.min_pair_rounds, self.min_state_rounds, self.seed)

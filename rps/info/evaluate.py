@@ -15,7 +15,8 @@ from .exact import VIEWS
 from .features import project
 
 
-def evaluate_views(episodes, output, *, m=25, alpha=0.05, delta=0.05, seed=0):
+def evaluate_views(episodes, output, *, m=25, alpha=0.05, delta=0.05, seed=0,
+                   allow_repeated_observations=False):
     if not isinstance(m, int) or m < 1 or not 0 < delta < 1:
         raise ValueError("need positive integer m and confidence delta in (0,1)")
     rank_threshold([], alpha)
@@ -27,6 +28,7 @@ def evaluate_views(episodes, output, *, m=25, alpha=0.05, delta=0.05, seed=0):
     seen_ids, seen_observations, seen_groups = set(), set(), set()
     seed_splits = {}
     planned_comparisons = 0
+    repeated_observations = 0
     source_hash = hashlib.sha256()
     for group_id, items in itertools.groupby(episodes, key=lambda e: e["group"]["id"]):
         if group_id in seen_groups:
@@ -65,7 +67,9 @@ def evaluate_views(episodes, output, *, m=25, alpha=0.05, delta=0.05, seed=0):
                         [r.get("messages") for r in ep["records"]]]
             digest = hashlib.sha256(json.dumps(observed, sort_keys=True, allow_nan=False).encode()).hexdigest()
             if digest in seen_observations:
-                raise ValueError("duplicate observable episode (possible split leakage)")
+                if not allow_repeated_observations:
+                    raise ValueError("duplicate observable episode (possible split leakage)")
+                repeated_observations += 1
             seen_observations.add(digest)
             for view in VIEWS:
                 if view in absent:
@@ -129,6 +133,8 @@ def evaluate_views(episodes, output, *, m=25, alpha=0.05, delta=0.05, seed=0):
     result = {"schema_version": 1, "label": "binary configured coalition mechanism, not intent or membership",
               "prior": "balanced classes", "alpha": alpha, "family_confidence": 1 - delta,
               "n_planned_comparisons": planned_comparisons,
+              "allow_repeated_observations": allow_repeated_observations,
+              "repeated_observations": repeated_observations,
               "relabel_interval": m, "seed": seed, "n_episodes": len(seen_ids),
               "dataset_sha256": source_hash.hexdigest(),
               "detector": "honest-fit diagonal standardized squared-distance anomaly; strict independent rank cutoff",

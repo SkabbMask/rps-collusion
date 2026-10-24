@@ -18,9 +18,10 @@ rps-simulate = "simulate:main"
 rps-analyze = "analyze:main"
 rps-evaluate = "evaluate:main"
 rps-information = "information:main"
+rps-experiment = "experiment:main"
 
 [tool.setuptools]
-py-modules = ["simulate", "analyze", "evaluate", "information"]
+py-modules = ["simulate", "analyze", "evaluate", "information", "experiment"]
 
 [tool.setuptools.packages.find]
 include = ["rps*"]

@@ -1,9 +1,4 @@
-"""Streaming evaluation: edge fitting -> null calibration -> held-out tests.
-
-The edge threshold is learned BEFORE score calibration on independent null
-episodes. Test labels are used for metrics only. Every artifact is generated
-from executed episodes; no pre-filled result tables are used.
-"""
+"""Fit graph edges, calibrate thresholds, then evaluate held-out games."""
 from __future__ import annotations
 
 import csv
@@ -76,7 +71,8 @@ def summarise(rows):
     return comparison
 
 
-def evaluate(episodes, config, output, *, save_dataset=True, source="generated"):
+def evaluate(episodes, config, output, *, save_dataset=True, source="generated",
+             allow_repeated_observations=False):
     output = Path(output)
     if (output / "report.md").exists():
         raise ValueError(f"{output} already has a report; choose a new output directory")
@@ -89,6 +85,7 @@ def evaluate(episodes, config, output, *, save_dataset=True, source="generated")
     start = time.perf_counter()
     rows, calibrations, group_counts, example = [], {}, {}, None
     seen_ids, seen_hashes, seen_groups = set(), set(), set()
+    repeated_observations = 0
     dataset_hash = hashlib.sha256()
     writer = gzip.open(output / "episodes.jsonl.gz", "wt", encoding="utf-8") if save_dataset else None
     try:
@@ -121,7 +118,9 @@ def evaluate(episodes, config, output, *, save_dataset=True, source="generated")
                 observable = json.dumps([sym.names, sym.moves.tolist(), sym.state.tolist()], separators=(",", ":"))
                 digest = hashlib.sha256(observable.encode()).hexdigest()
                 if digest in seen_hashes:
-                    raise ValueError(f"duplicate observable trajectory (possible leakage): {ep['id']}")
+                    if not allow_repeated_observations:
+                        raise ValueError(f"duplicate observable trajectory (possible leakage): {ep['id']}")
+                    repeated_observations += 1
                 seen_hashes.add(digest)
                 truth = ep["truth"]
                 if any(len(set(g)) != len(g) or len(g) < 2 or not set(g).issubset(sym.names) for g in truth):
@@ -186,6 +185,8 @@ def evaluate(episodes, config, output, *, save_dataset=True, source="generated")
     except (subprocess.SubprocessError, FileNotFoundError):
         commit = "archive checkout (see ATTRIBUTION.md)"
     provenance = {"source": source, "base_revision": commit, "python": platform.python_version(),
+                  "allow_repeated_observations": allow_repeated_observations,
+                  "repeated_observations": repeated_observations,
                   "platform": platform.platform(), "versions": versions, "dataset_sha256": dataset_hash.hexdigest(),
                   "config_sha256": hashlib.sha256(json.dumps(config, sort_keys=True).encode()).hexdigest(),
                   "episodes": len(seen_ids), "test_episodes": len(rows) // len(METHODS), "group_counts": group_counts,

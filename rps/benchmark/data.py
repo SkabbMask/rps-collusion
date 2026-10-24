@@ -142,4 +142,4 @@ def manifest_episodes(path):
         group = {"id": item["group"], "n_players": len(names), "rounds": len(records),
                  **manifest["groups"][item["group"]]}
         yield {"id": item["id"], "group": group, "split": item["split"], "scenario": item["scenario"],
-               "cp": item.get("cp"), "seed": None, "truth": item["truth"], "records": records}
+               "cp": item.get("cp"), "seed": item.get("seed"), "truth": item["truth"], "records": records}

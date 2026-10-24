@@ -1,179 +1,226 @@
-# Complete experiment: five detectors and six information views
+# Running experiments
 
-Run these commands from the repository root. This is the full scripted
-experiment, not the smoke configuration. No Ollama server is required.
-It evaluates 6,253 episodes (4,300 held-out tests) with **five** methods:
-Bonjour, graph components, graph Louvain, ML decoder and average-z growth.
-
-## 1. Install and test
+Commands below assume you are in the repository root. For this checkout:
 
 ```bash
 cd /home/bitchae/aisafety/collusion/rps-collusion-updated/rps-collusion
+```
 
+## Setup
+
+```bash
 python3 -m venv .venv
 source .venv/bin/activate
 python -m pip install -r requirements-detection.txt
 python -m unittest discover -s tests -v
 ```
 
-## 2. Simulate one game
+## Qwen or another local model
+
+The model backend is [Ollama](https://docs.ollama.com/quickstart).
+Start the server in a separate terminal if it is not already running:
 
 ```bash
-python simulate.py \
-  --config configs/random.json \
-  --log runs/full-test-game-growth.jsonl
+ollama serve
 ```
 
-This prints the original Bonjour result. All five methods are applied in step
-5 after the new calibration is generated. Old four-method calibration files,
-including `results/benchmark/calibration/*.json`, cannot calibrate the new
-growth method and are rejected with instructions to rerun the benchmark.
-
-## 3. Prepare the full benchmark with public-message observations
-
-This creates a separate configuration. `growth_frac=0.25` is the teammate's
-analysis default and must be fixed before evaluation, not tuned on test results.
+Download [Qwen 2.5 14B](https://ollama.com/library/qwen2.5:14b) and check the
+installed model names:
 
 ```bash
-python - <<'PY'
-import json
-from pathlib import Path
-
-config = json.loads(Path("configs/benchmark.json").read_text())
-config["public_messages"] = True
-config.setdefault("detector", {})["growth_frac"] = 0.25
-Path("configs/full-information.json").write_text(
-    json.dumps(config, indent=2) + "\n"
-)
-PY
+ollama pull qwen2.5:14b
+ollama list
 ```
 
-## 4. Run the full detection benchmark and generate fresh calibration
+The original command uses `config.json`:
 
 ```bash
-python evaluate.py \
-  --config configs/full-information.json \
-  --output results/full-detection-growth
+python simulate.py --rounds 200 --cp 0.5 --model qwen2.5:14b -v
 ```
 
-This executes all five methods, calibrates the added growth detector on
-independent honest episodes, and writes 21,500 held-out method decisions.
-It also saves all trajectories for the information analysis below. The four
-existing methods retain their previous algorithms and thresholds, subject to
-the same dependency versions, dataset and configuration.
+In that configuration, A and C are random and **only B uses the model**.
+The endpoint comes from `.env` or `OLLAMA_URL`, defaulting to localhost.
+Add `--url localhost:11434` to force the local server.
 
-## 5. Analyze the single game with all five methods
+For **three model-backed players**, use the included `configs/ollama.json`:
 
 ```bash
-python analyze.py \
-  --log runs/full-test-game-growth.jsonl \
-  --calibration results/full-detection-growth/calibration/N3_T300_none.json \
-  --output runs/full-test-detection-growth.json
+python simulate.py --config configs/ollama.json \
+  --model qwen2.5:14b --url localhost:11434 \
+  --rounds 200 --cp 0.5 --log runs/qwen.jsonl -v
 ```
 
-For subsequent games, integrated detection is also available:
+For another installed model, replace `qwen2.5:14b` with its name from
+`ollama list`. For example, if `llama3.2:latest` is installed:
 
 ```bash
-python simulate.py \
-  --config configs/random.json \
-  --log runs/integrated-growth.jsonl \
-  --calibration results/full-detection-growth/calibration/N3_T300_none.json \
-  --detection-output runs/integrated-growth-detection.json
+python simulate.py --config configs/ollama.json \
+  --model llama3.2:latest --url localhost:11434 \
+  --rounds 200 --cp 0.5 --log runs/llama.jsonl -v
 ```
 
-## 6. Evaluate information bounds on the same episodes
+Use `--seed` to set the experiment seed and `--log` to keep separate runs.
+Each run prints scores, signal compliance and the Bonjour detection result.
+Model responses can vary even with a fixed seed.
+
+### Public messages
+
+To record public messages as well as actions:
 
 ```bash
-python information.py \
-  --config configs/full-information.json \
-  --dataset results/full-detection-growth/episodes.jsonl.gz \
-  --relabel-interval 25 \
-  --output results/full-information-growth
+python simulate.py --config configs/ollama-messages.json \
+  --model qwen2.5:14b --url localhost:11434 \
+  --rounds 200 --cp 0.5 --log runs/qwen-messages.jsonl -v
 ```
 
-Main results:
+Messages are published after each round and shown in later rounds. This is
+separate from the private signal sent to B. See [INFORMATION.md](INFORMATION.md)
+for the `full` and `metadata` views.
+
+### Another machine
+
+The model must be installed on the machine running the Ollama server:
+
+```bash
+python simulate.py --config configs/ollama.json \
+  --model qwen2.5:14b --url 192.168.1.50:11434 \
+  --rounds 200 --cp 0.5 --log runs/remote-qwen.jsonl -v
+```
+
+To save endpoints, copy `.env.example` to `.env` and set `OLLAMA_URL`.
+`PLAYER_A_URL`, `PLAYER_B_URL` and `PLAYER_C_URL` can select different servers.
+A CLI `--url` overrides them all. Player-specific models go in the `players`
+entries in your JSON configuration.
+
+## Full Qwen experiment
+
+Use `experiment.py` to collect honest and coalition games with Qwen, then run
+all five detectors and the six-view information analysis. Every player uses
+the selected model. Inspect the size first, then start the batch:
+
+```bash
+python experiment.py --config configs/qwen-experiment.json \
+  --model qwen2.5:14b --url localhost:11434 \
+  --output results/qwen-full --dry-run
+
+python experiment.py --config configs/qwen-experiment.json \
+  --model qwen2.5:14b --url localhost:11434 \
+  --output results/qwen-full
+```
+
+The full N=3/N=6 grid has **4,316 games and 4,244,400 model turns**, plus retries.
+It does not include the artificial stress generators from the scripted benchmark.
+For a connection/pipeline check, use the 54-turn smoke configuration:
+
+```bash
+python experiment.py --config configs/qwen-smoke.json \
+  --url localhost:11434 --output results/qwen-smoke
+```
+
+`configs/qwen-pilot.json` offers a smaller 119-game study. The smoke check has
+too little calibration data for research conclusions. Edit a copy of a config
+before collecting data; `--dry-run` recalculates the size.
+
+Rerun the same command to resume. Read `results/qwen-full/report.md` for links
+to both analyses and model-compliance counts. For collection-only runs, limits,
+offline analysis and label details, see [QWEN.md](QWEN.md).
+
+## Full scripted experiment
+
+This uses random players and programmed assistants. No Ollama server is needed.
+The configuration includes N=3 and N=6, T=100 and T=300, plus stress cases.
+There are 6,253 episodes: 1,953 for fitting/calibration and 4,300 held-out tests.
+All five detection methods run automatically.
+
+### 1. Simulate one game
+
+```bash
+python simulate.py --config configs/random.json \
+  --log runs/test-game.jsonl
+```
+
+### 2. Run the benchmark
+
+`configs/full-information.json` already includes public-message observations
+and `growth_frac=0.25`; no configuration-generation step is needed.
+
+```bash
+python evaluate.py --config configs/full-information.json \
+  --output results/my-run/detection
+```
+
+This saves the report, figures, predictions, calibration files and dataset.
+For a smaller check, use `configs/smoke.json` instead.
+
+### 3. Analyze the game with all five methods
+
+```bash
+python analyze.py --log runs/test-game.jsonl \
+  --calibration results/my-run/detection/calibration/N3_T300_none.json \
+  --output runs/test-detection.json
+```
+
+Or combine simulation and analysis in one command after calibration exists:
+
+```bash
+python simulate.py --config configs/random.json \
+  --log runs/next-game.jsonl \
+  --calibration results/my-run/detection/calibration/N3_T300_none.json \
+  --detection-output runs/next-detection.json
+```
+
+Calibration must match the number of players, rounds, state definition,
+detector settings and honest player population. These files are for scripted
+players; do not use them to claim calibrated LLM detection. Older four-method
+files, including `results/benchmark/calibration`, cannot be used with the
+current five-method code.
+
+### 4. Compare information views
+
+```bash
+python information.py --config configs/full-information.json \
+  --dataset results/my-run/detection/episodes.jsonl.gz \
+  --relabel-interval 25 --output results/my-run/information
+```
+
+Read:
 
 ```text
-results/full-detection-growth/report.md
-results/full-information-growth/report.md
+results/my-run/detection/report.md
+results/my-run/information/report.md
 ```
 
-Use fresh output directory names for repeated runs, and change subsequent
-commands to match those names. Existing completed reports are not overwritten.
-The first stage uses a five-method **detection suite**; the information stage
-compares six **observation views** with its own fixed feature detectors. Adding
-growth does not change those information-view algorithms or CLI options.
+Use a fresh `results/my-run` name for each complete experiment. Scripted
+players send empty public messages. The recorded-state stress case cannot
+use relabelling because its state may expose identities.
 
-These commands use scripted players. Their public messages are observed
-silence, so full and metadata add no information beyond identified actions.
-The opaque recorded-state stress group excludes relabelling because its state
-cannot safely be anonymized. Exact small-model limits and empirical confidence
-lower bounds are separate experiments; see [INFORMATION.md](INFORMATION.md).
+## Reuse existing data
 
-## Re-evaluate an existing dataset with the new detector
-
-You can reuse independently split existing trajectories; all five methods are
-recalibrated and evaluated. Historical results need not be overwritten:
+Recalibrate and rerun all five detectors on saved episodes:
 
 ```bash
-python evaluate.py \
-  --config results/full-detection/config.json \
+python evaluate.py --config results/full-detection/config.json \
   --dataset results/full-detection/episodes.jsonl.gz \
-  --output results/full-detection-growth-replay
+  --output results/my-replay
 ```
 
-If the saved config predates growth, `growth_frac` defaults to 0.25. The fresh
-calibration records it explicitly. There is no need to rerun Ollama or regenerate
-scripted episodes just to evaluate the new method. Replaying logs without public
-messages still leaves full/metadata information views unavailable.
+This does not call Ollama or regenerate games. If the old configuration has
+no `growth_frac`, it defaults to 0.25.
 
-## Actual three-LLM game with messages
+## Evaluate a collection of LLM games
 
-With Ollama running and `llama3.2:latest` available:
-
-```bash
-python simulate.py \
-  --config configs/ollama-messages.json \
-  --url localhost:11434 \
-  --log runs/full-ollama-game.jsonl \
-  -v
-```
-
-This runs three LLM players. The scripted calibration is not valid for this
-population. A complete LLM experiment needs independent honest fit/calibration
-and honest/coalition test games, with an explicitly labeled manifest:
+One game lets you inspect behavior. A detection or information experiment
+needs separate honest fit/calibration games and honest/coalition test games.
+List their files and known labels in a manifest, using the schema in
+[DETECTION.md](DETECTION.md):
 
 ```bash
 python evaluate.py --manifest manifest.json --config configs/full-information.json \
-  --output results/llm-detection-growth
+  --output results/my-llm-run/detection
 python information.py --manifest manifest.json --config configs/full-information.json \
-  --relabel-interval 25 --output results/llm-information-growth
+  --relabel-interval 25 --output results/my-llm-run/information
 ```
 
-The repository provides manifest import and analysis, not a single-command LLM
-data-collection runner. See [DETECTION.md](DETECTION.md) for the manifest schema
-and [INFORMATION.md](INFORMATION.md) for message observation requirements.
-
-## What changed in new-decoder integration
-
-The requested algorithm is `grow_from_top_pair` in upstream
-`detection/decoder.py`, pinned at commit
-`1bea281244ad2d756b9b507145b2046fefcf1582`. The local method key is `growth`.
-It starts from the strongest supported pair, selects the next player with the
-largest mean z to the existing group, and joins it when that mean is at least
-`growth_frac` times the group's current internal pair mean. The cutoff is
-recomputed after each join. Missing edges contribute zero to means; completely
-unsupported episodes abstain. Ties use player order. The seed must be supported,
-which avoids choosing an unobserved pair over observed negative evidence.
-
-Membership growth has a relative cutoff. An independent honest calibration
-still controls episode-level detection: the seed-pair z must strictly exceed
-its frozen threshold before the group is reported in `groups`. `details` contains
-the diagnostic candidate growth trace, not additional detected groups.
-This adapts upstream's strongest-pair acceptance to the local independent
-calibration convention rather than its within-episode surrogate calibration.
-
-The separate upstream graph pruning/mean-score changes are not substituted for
-the existing components/Louvain methods. This keeps the original four-method
-comparison intact and isolates the requested average-z growth addition. Growth
-returns one group, so multiple disjoint coalitions remain a limitation.
+Models, prompts, game length and message settings must match within each
+calibration group. Use the batch runner above to collect compatible games, or supply independently
+collected logs in this format.

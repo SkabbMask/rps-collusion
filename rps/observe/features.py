@@ -1,9 +1,7 @@
-"""RPS symbols adapted from colav/observe/features.py; see ATTRIBUTION.md.
+"""Convert public RPS actions and pre-action state to categorical arrays.
 
-Only actions and pre-action public state are observable here. Roles, private
-signals, policies, payoffs and ground truth are deliberately never consumed.
-Rock/paper/scissors are categories, not ordered numerical price changes.
-"""
+Private signals, roles, policies, payoffs and labels are ignored.
+Adapted from COLAV; see ATTRIBUTION.md."""
 from __future__ import annotations
 
 import json

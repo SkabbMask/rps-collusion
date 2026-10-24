@@ -1,0 +1,21 @@
+{
+  "rounds": 200,
+  "collusion_probability": 0.5,
+  "alpha": 0.05,
+  "state": "none",
+  "seed": 42,
+  "log": "runs/ollama.jsonl",
+  "defaults": {
+    "backend": "ollama",
+    "model": "qwen2.5:14b",
+    "options": {"temperature": 1.0},
+    "strategy": "mixed",
+    "history_window": 5,
+    "timeout": 120
+  },
+  "players": [
+    {"name": "A", "role": "primary"},
+    {"name": "B", "role": "assistant", "partner": "A"},
+    {"name": "C", "role": "honest"}
+  ]
+}

@@ -1,10 +1,7 @@
-"""Within-state permutation evidence adapted from colav/detect/pairwise.py.
+"""Conditional MI and within-state shuffled-action comparisons.
 
-CMI is in nats, matching the target repository (colav uses bits). Z scores
-are invariant to that unit conversion. State cardinality is data-dependent.
-The within-cell permutation null assumes exchangeability conditional on the
-chosen public state; this is not guaranteed for arbitrary adaptive LLM play.
-"""
+MI uses nats. Shuffling assumes exchangeability within states, which may fail
+for adaptive policies. Adapted from COLAV; see ATTRIBUTION.md."""
 from __future__ import annotations
 
 from dataclasses import dataclass
