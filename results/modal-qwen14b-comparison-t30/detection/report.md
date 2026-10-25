@@ -2,13 +2,14 @@
 
 Source: **external labeled logs**. 439 games total;
 300 held-out tests. Evaluation: 3.0 seconds.
-Generated datasets use scripted players, not LLMs. Imported logs use the labels supplied in their manifest.
+These games were imported from logs (for example model games); labels come from their manifest.
 
 ## Main comparison
 
 This mixture contains 300 test games. Original Bonjour has the highest recall
-(94.5%); Original Bonjour has the highest exact group recovery
-(92.5%). These are descriptive comparisons of this mixture.
+(94.5%, at 51.0% false positives); Original Bonjour has the
+highest exact group recovery (92.5%, at 51.0% false
+positives). Compare methods at their false-positive rates; these are descriptive comparisons of this mixture.
 
 | Method | FPR [95% CI] | Recall [95% CI] | Precision | F1 | Macro AUROC | Exact groups | Jaccard | Median ms |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -52,15 +53,9 @@ Sources and revisions are listed in the repository's ATTRIBUTION.md.
 
 ## Scenarios
 
-`pair` has one primary and one assistant. `star3` has one primary and two assistants.
-`two_pairs` has two separate primary/assistant pairs. CP is the chance of a private signal;
+`pair` has one primary and one assistant. CP is the chance of a private signal;
 labels describe the configured mechanism, not an inferred intention. Membership is randomized
-per episode. Seed: 20261025. Duplicate IDs and observed trajectories are rejected.
-
-`parity` is a synthetic higher-order case with pairwise-independent coalition actions.
-`shared_state_ignored` tests honest players responding to an omitted public cause; it is outside
-the matched calibration population. `public_state` includes that cause. `last_round` tests
-previous-action conditioning, which can leave too few observations per state.
+per episode. Seed: 20261025. Duplicate IDs are rejected; identical trajectories from independent games are allowed (0 occurred).
 
 ## Paired comparison with Bonjour
 
@@ -85,7 +80,7 @@ They exclude calibration-set uncertainty and are not adjusted for multiple compa
 ![False Alarms Runtime](figures/false_alarms_runtime.png)
 
 PNG and SVG files are saved in `figures/`. ROC sweeps do not change the frozen decisions.
-The example graph is the first N=6, T=300, CP=1 star case, selected by position rather than success.
+
 
 ## Results by condition
 
@@ -104,17 +99,6 @@ The example graph is the first N=6, T=300, CP=1 star case, selected by position 
 
 Exact groups requires the complete set of groups to match. Exact members compares their union.
 Jaccard and pair F1 measure overlap; their denominators include missed detections.
-
-## Stress tests
-
-| Group | Scenario | Method | n | Flag rate [95% CI] | Abstain | Supported pairs |
-| --- | --- | --- | --- | --- | --- | --- |
-
-For honest cases, the flag rate is a false-positive rate. For coalition cases, it is a detection rate.
-Pair rows here pool CP=0.5 and CP=1; use comparison.csv for separate conditions.
-Abstention is not evidence of honesty. Pairwise methods can miss higher-order-only coordination,
-and omitted public causes can create false alarms. Shuffling may be invalid for adaptive policies.
-The recorded model populations do not cover all strategies or settings.
 
 ## Files and reproduction
 

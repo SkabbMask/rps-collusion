@@ -24,6 +24,7 @@ class TestModalLauncher(unittest.TestCase):
         module = launcher()
         response = io.BytesIO(b'{"models":[{"name":"qwen2.5:14b"}]}')
         with (patch.object(Path, "is_file", return_value=True),
+              patch.object(Path, "read_text", return_value='{"players": [3]}'),
               patch("subprocess.Popen") as server,
               patch("subprocess.run") as run,
               patch("urllib.request.urlopen", return_value=response)):
@@ -34,6 +35,7 @@ class TestModalLauncher(unittest.TestCase):
         self.assertIn("--collect-only", command)
         self.assertEqual(command[-3:], ["--limit", "2", "--collect-only"])
         self.assertLessEqual(run.call_args.kwargs["timeout"], 60)
+        self.assertEqual(server.call_args.kwargs["env"]["OLLAMA_NUM_PARALLEL"], "3")
         server.return_value.terminate.assert_called_once()
         module.results.commit.assert_called()
         module.models.commit.assert_called()
@@ -41,6 +43,7 @@ class TestModalLauncher(unittest.TestCase):
     def test_timeout_commits_partial_results(self):
         module = launcher()
         with (patch.object(Path, "is_file", return_value=True),
+              patch.object(Path, "read_text", return_value='{"players": [3]}'),
               patch("subprocess.Popen") as server,
               patch("subprocess.run", side_effect=subprocess.TimeoutExpired("experiment", 1)),
               patch("urllib.request.urlopen", return_value=io.BytesIO(
@@ -54,6 +57,7 @@ class TestModalLauncher(unittest.TestCase):
     def test_offline_analysis_does_not_start_ollama(self):
         module = launcher()
         with (patch.object(Path, "is_file", return_value=True),
+              patch.object(Path, "read_text", return_value='{"players": [3]}'),
               patch("subprocess.Popen") as server, patch("subprocess.run") as run):
             module.run(analyze_only=True)
         server.assert_not_called()

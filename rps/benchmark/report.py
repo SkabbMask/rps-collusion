@@ -198,20 +198,55 @@ def generate_report(output, rows, comparisons, calibrations, config, provenance,
                   _number(r["abstain"]), _number(r["supported_pairs"])] for r in stress_rows])
     counts_table = markdown_table(["Calibration group", "Edge fit", "Calibration", "Held-out test"],
                                  [[g, c["edge_fit"], c["calibration"], c["test"]] for g, c in provenance["group_counts"].items()])
+    SOURCE_NOTE = {True: "These games were generated with scripted players, not LLMs.",
+                   False: "These games were imported from logs (for example model games); labels come from their manifest."}
     best = max(summary, key=lambda m: summary[m]["recall"])
     recovery_best = max(summary, key=lambda m: summary[m]["exact_groups"])
+    present = {r["scenario"] for r in rows}
+    scenario_notes = {
+        "pair": "`pair` has one primary and one assistant.",
+        "star3": "`star3` has one primary and two assistants.",
+        "two_pairs": "`two_pairs` has two separate primary/assistant pairs.",
+        "parity": "`parity` is a synthetic higher-order case with pairwise-independent coalition actions.",
+        "shared_state_ignored": "`shared_state_ignored` tests honest players responding to an omitted public cause; "
+                                "it is outside the matched calibration population.",
+        "public_state": "`public_state` includes that cause.",
+    }
+    scenario_text = " ".join(note for name, note in scenario_notes.items() if name in present)
+    if any(g.endswith("_last_round") for g in {r["group"] for r in rows}):
+        scenario_text += (" `last_round` tests previous-action conditioning, which can leave too few "
+                          "observations per state.")
+    if provenance.get("allow_repeated_observations"):
+        duplicates = (f"Duplicate IDs are rejected; identical trajectories from independent games are allowed "
+                      f"({provenance.get('repeated_observations', 0)} occurred).")
+    else:
+        duplicates = "Duplicate IDs and observed trajectories are rejected."
+    example_note = ("The example graph is the first N=6, T=300, CP=1 star case, selected by position rather than success."
+                    if "example_graph" in paths else "")
+    stress_section = f"""## Stress tests
+
+{stress_table}
+
+For honest cases, the flag rate is a false-positive rate. For coalition cases, it is a detection rate.
+Pair rows here pool CP=0.5 and CP=1; use comparison.csv for separate conditions.
+Abstention is not evidence of honesty. Pairwise methods can miss higher-order-only coordination,
+and omitted public causes can create false alarms. Shuffling may be invalid for adaptive policies.
+The recorded model populations do not cover all strategies or settings.
+
+""" if stress_rows else ""
     figures_md = "\n\n".join(f"![{name.replace('_', ' ').title()}](figures/{name}.png)" for name in paths)
     report = f"""# RPS detection results
 
 Source: **{provenance['source']}**. {provenance['episodes']:,} games total;
 {provenance['test_episodes']:,} held-out tests. Evaluation: {provenance['evaluation_seconds']:.1f} seconds.
-Generated datasets use scripted players, not LLMs. Imported logs use the labels supplied in their manifest.
+{SOURCE_NOTE[provenance['source'] == 'generated']}
 
 ## Main comparison
 
 This mixture contains {len(core_ids):,} test games. {METHOD_LABELS[best]} has the highest recall
-({summary[best]['recall']:.1%}); {METHOD_LABELS[recovery_best]} has the highest exact group recovery
-({summary[recovery_best]['exact_groups']:.1%}). These are descriptive comparisons of this mixture.
+({summary[best]['recall']:.1%}, at {summary[best]['fpr']:.1%} false positives); {METHOD_LABELS[recovery_best]} has the
+highest exact group recovery ({summary[recovery_best]['exact_groups']:.1%}, at {summary[recovery_best]['fpr']:.1%} false
+positives). Compare methods at their false-positive rates; these are descriptive comparisons of this mixture.
 
 {summary_table}
 
@@ -247,15 +282,9 @@ Sources and revisions are listed in the repository's ATTRIBUTION.md.
 
 ## Scenarios
 
-`pair` has one primary and one assistant. `star3` has one primary and two assistants.
-`two_pairs` has two separate primary/assistant pairs. CP is the chance of a private signal;
+{scenario_text} CP is the chance of a private signal;
 labels describe the configured mechanism, not an inferred intention. Membership is randomized
-per episode. Seed: {config['seed']}. Duplicate IDs and observed trajectories are rejected.
-
-`parity` is a synthetic higher-order case with pairwise-independent coalition actions.
-`shared_state_ignored` tests honest players responding to an omitted public cause; it is outside
-the matched calibration population. `public_state` includes that cause. `last_round` tests
-previous-action conditioning, which can leave too few observations per state.
+per episode. Seed: {config['seed']}. {duplicates}
 
 ## Paired comparison with Bonjour
 
@@ -269,7 +298,7 @@ They exclude calibration-set uncertainty and are not adjusted for multiple compa
 {figures_md}
 
 PNG and SVG files are saved in `figures/`. ROC sweeps do not change the frozen decisions.
-The example graph is the first N=6, T=300, CP=1 star case, selected by position rather than success.
+{example_note}
 
 ## Results by condition
 
@@ -278,17 +307,7 @@ The example graph is the first N=6, T=300, CP=1 star case, selected by position 
 Exact groups requires the complete set of groups to match. Exact members compares their union.
 Jaccard and pair F1 measure overlap; their denominators include missed detections.
 
-## Stress tests
-
-{stress_table}
-
-For honest cases, the flag rate is a false-positive rate. For coalition cases, it is a detection rate.
-Pair rows here pool CP=0.5 and CP=1; use comparison.csv for separate conditions.
-Abstention is not evidence of honesty. Pairwise methods can miss higher-order-only coordination,
-and omitted public causes can create false alarms. Shuffling may be invalid for adaptive policies.
-The recorded model populations do not cover all strategies or settings.
-
-## Files and reproduction
+{stress_section}## Files and reproduction
 
 See docs/RUNNING.md in the repository for complete commands. Use a fresh output directory.
 To replay these trajectories, pass episodes.jsonl.gz to evaluate.py with --dataset.
