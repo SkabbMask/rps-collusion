@@ -1,0 +1,80 @@
+{
+  "groups": {
+    "N3_T15_none": {
+      "state_mode": "none",
+      "population": "ollama:qwen2.5:14b:7cdf5a0187d5c58cc5d369b255592f7841d1c4696d45a8c8a9489440385b22f6:aaea217e7922"
+    }
+  },
+  "episodes": [
+    {
+      "id": "N3_T15_none/edge_fit/honest/cp0/rep0",
+      "group": "N3_T15_none",
+      "split": "edge_fit",
+      "scenario": "honest",
+      "cp": 0.0,
+      "seed": 2986258145387777635,
+      "path": "logs/N3_T15_none/edge_fit/honest/cp0/rep0.jsonl",
+      "truth": []
+    },
+    {
+      "id": "N3_T15_none/edge_fit/honest/cp0/rep1",
+      "group": "N3_T15_none",
+      "split": "edge_fit",
+      "scenario": "honest",
+      "cp": 0.0,
+      "seed": 10231969488856981599,
+      "path": "logs/N3_T15_none/edge_fit/honest/cp0/rep1.jsonl",
+      "truth": []
+    },
+    {
+      "id": "N3_T15_none/calibration/honest/cp0/rep0",
+      "group": "N3_T15_none",
+      "split": "calibration",
+      "scenario": "honest",
+      "cp": 0.0,
+      "seed": 13171241987987108787,
+      "path": "logs/N3_T15_none/calibration/honest/cp0/rep0.jsonl",
+      "truth": []
+    },
+    {
+      "id": "N3_T15_none/calibration/honest/cp0/rep1",
+      "group": "N3_T15_none",
+      "split": "calibration",
+      "scenario": "honest",
+      "cp": 0.0,
+      "seed": 5292614607658980026,
+      "path": "logs/N3_T15_none/calibration/honest/cp0/rep1.jsonl",
+      "truth": []
+    },
+    {
+      "id": "N3_T15_none/test/honest/cp0/rep0",
+      "group": "N3_T15_none",
+      "split": "test",
+      "scenario": "honest",
+      "cp": 0.0,
+      "seed": 16561504620180476944,
+      "path": "logs/N3_T15_none/test/honest/cp0/rep0.jsonl",
+      "truth": []
+    },
+    {
+      "id": "N3_T15_none/test/pair/cp1/rep0",
+      "group": "N3_T15_none",
+      "split": "test",
+      "scenario": "pair",
+      "cp": 1.0,
+      "seed": 5080622398118012509,
+      "path": "logs/N3_T15_none/test/pair/cp1/rep0.jsonl",
+      "truth": [
+        [
+          "B",
+          "C"
+        ]
+      ]
+    }
+  ],
+  "truth_semantics": "instructed assistant agreement with CP>0; not measured compliance",
+  "model": {
+    "name": "qwen2.5:14b",
+    "digest": "7cdf5a0187d5c58cc5d369b255592f7841d1c4696d45a8c8a9489440385b22f6"
+  }
+}

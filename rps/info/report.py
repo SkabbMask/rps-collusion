@@ -1,4 +1,4 @@
-"""Report exact model limits separately from held-out decision lower bounds."""
+"""Report information lower bounds from held-out games."""
 from pathlib import Path
 
 from rps.detection.pipeline import write_json
@@ -21,7 +21,9 @@ def write_report(output, empirical=None, exact=None):
              "Missing message instrumentation is unknown; an explicitly recorded empty string is silence.", ""]
     if exact:
         write_json(output / "exact_views.json", exact)
-        lines += ["## Exact small model", "",
+        lines += ["## Optional toy diagnostic (excluded from the paper)", "",
+                  "This diagnostic was inconclusive for the paper’s empirical question and was excluded. "
+                  "Its calculations describe only the specified toy model.", "",
                   f"N={exact['n_players']}, T={exact['rounds']}, CP={exact['cp']}, relabel interval={exact['relabel_interval']}. "
                   "H0 is independent uniform play. H1 chooses an ordered primary/helper pair uniformly once "
                   "per episode; the helper assists independently with probability CP in each round. "
@@ -71,7 +73,12 @@ def write_report(output, empirical=None, exact=None):
                 lines.append(f"- {r['group']} / {r['view']}: {r['reason']}.")
             lines.append("")
     lines += ["## Scope", "",
-              "The exact model and measured bounds are separate experiments. Neither establishes a general "
+              "These results do not establish a general "
               "limit for LLM detection. Count streams are dependent even under honest play, so the "
               "comparison must use matching honest games. See docs/INFORMATION.md for details.", ""]
     (output / "report.md").write_text("\n".join(lines), encoding="utf-8")
+    from rps.figures import information
+    information(output, include_exact=bool(exact))
+    with (output / "report.md").open("a", encoding="utf-8") as handle:
+        handle.write("\n## Figures\n\n[Figures and captions](figures/information_captions.md). "
+                     "The optional toy diagnostic is excluded from the paper.\n")

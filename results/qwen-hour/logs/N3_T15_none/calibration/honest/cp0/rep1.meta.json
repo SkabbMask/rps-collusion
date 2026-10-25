@@ -1,0 +1,13 @@
+{
+  "id": "N3_T15_none/calibration/honest/cp0/rep1",
+  "seed": 5292614607658980026,
+  "collection_fingerprint": "588e8031abd84f13f6fe5440071a2e0cc1353804b8313d480e40afb303cc7e06",
+  "log_sha256": "af6511059f0ced9e99607c34b6d25a08a87475ec48f8c70fbbaba656de566da6",
+  "parse_failures": {
+    "A": 0,
+    "B": 0,
+    "C": 0
+  },
+  "signals": 0,
+  "signals_followed": 0
+}

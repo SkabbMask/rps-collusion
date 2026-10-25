@@ -1,0 +1,9 @@
+method,metric,difference,ci_low,ci_high,episodes
+graph_components,flag,-1.0,-1.0,-1.0,1
+graph_components,exact_groups,-1.0,-1.0,-1.0,1
+graph_louvain,flag,-1.0,-1.0,-1.0,1
+graph_louvain,exact_groups,-1.0,-1.0,-1.0,1
+decoder,flag,-1.0,-1.0,-1.0,1
+decoder,exact_groups,-1.0,-1.0,-1.0,1
+growth,flag,-1.0,-1.0,-1.0,1
+growth,exact_groups,-1.0,-1.0,-1.0,1

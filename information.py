@@ -1,4 +1,4 @@
-"""Compare six RPS auditor views using exact and held-out information bounds."""
+"""Compare six RPS observation views using held-out information bounds."""
 import argparse
 import hashlib
 import importlib.metadata
@@ -22,7 +22,11 @@ def main():
     source.add_argument("--manifest", help="independently labeled logs; same schema as evaluate.py")
     parser.add_argument("--relabel-interval", type=int, default=25)
     parser.add_argument("--delta", type=float, default=0.05, help="family confidence error probability")
-    parser.add_argument("--exact-only", action="store_true")
+    exact_options = parser.add_mutually_exclusive_group()
+    exact_options.add_argument("--include-exact", action="store_true",
+                               help="also run the optional toy diagnostic, excluded from the paper")
+    exact_options.add_argument("--exact-only", action="store_true",
+                               help="run only the optional toy diagnostic, excluded from the paper")
     parser.add_argument("--allow-repeated-observations", action="store_true",
                         help="allow identical outcomes from independently collected games; IDs must remain unique")
     parser.add_argument("--exact-rounds", type=int, default=3)
@@ -34,8 +38,9 @@ def main():
         parser.error("choose a fresh/empty output directory")
     cfg = json.loads(Path(args.config).read_text(encoding="utf-8"))
     alpha = cfg.get("alpha", 0.05)
-    exact = enumerate_views(rounds=args.exact_rounds, cp=args.exact_cp,
-                            m=args.exact_relabel_interval, alpha=alpha)
+    exact = (enumerate_views(rounds=args.exact_rounds, cp=args.exact_cp,
+                             m=args.exact_relabel_interval, alpha=alpha)
+             if args.include_exact or args.exact_only else None)
     empirical = None
     if not args.exact_only:
         if args.dataset:

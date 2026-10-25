@@ -1,0 +1,20 @@
+{
+  "inputs_sha256": {
+    "exact_views.json": "6dc4f392540a9169310a1219831f979de7f572f8cd7fd1c2cb568b3b781f3508",
+    "information.json": "35e4fbe71ae9d5674cadf535926480f880bd7b4c94910ea063b7d88a592276ed",
+    "config.json": "b219ae95c3245af9ef29c2b489d56628658c40e0a40d9fe0f1f997b4bfd75fe9",
+    "provenance.json": "2380c5efa04d19fb8d2ff7cf747a87f7ab3e2cb5d6f223a031a10cfc37782a5d",
+    "figure_exporter.py": "14fbda0ce10496efdd8242192e82d9917d527b81f782bfd354864f163c6b033c"
+  },
+  "files": [
+    "paper_information_bounds_01.png",
+    "paper_information_bounds_01.svg",
+    "paper_information_bounds_01.pdf",
+    "information_captions.md"
+  ],
+  "options": {
+    "include_exact": false
+  },
+  "matplotlib": "3.11.2",
+  "scope": "saved results only; no new experiments"
+}

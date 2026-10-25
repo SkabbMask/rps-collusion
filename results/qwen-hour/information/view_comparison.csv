@@ -1,0 +1,7 @@
+group,view,scenario,cp,threshold,feature_dim,mean_gzip_bytes,mean_raw_bytes,n_positive,n_negative,tp,fp,tpr,fpr,tpr_lower,fpr_upper,tv_plugin_detector,tv_lower_confidence,mi_decision_bits_plugin,mi_view_bits_lower_confidence,bayes_error_upper_confidence,delta_per_comparison,kind
+N3_T15_none,full,pair,1.0,inf,104,914.5,3839.5,1,1,0,0,0.0,0.0,0.0,0.9958333333333333,0.0,0.0,0.0,0.0,0.5,0.008333333333333333,held_out_decision_confidence_lower_bound
+N3_T15_none,identified,pair,1.0,inf,63,115.0,285.0,1,1,0,0,0.0,0.0,0.0,0.9958333333333333,0.0,0.0,0.0,0.0,0.5,0.008333333333333333,held_out_decision_confidence_lower_bound
+N3_T15_none,relabelled,pair,1.0,inf,26,182.5,567.0,1,1,0,0,0.0,0.0,0.0,0.9958333333333333,0.0,0.0,0.0,0.0,0.5,0.008333333333333333,held_out_decision_confidence_lower_bound
+N3_T15_none,histogram,pair,1.0,inf,20,76.0,132.0,1,1,0,0,0.0,0.0,0.0,0.9958333333333333,0.0,0.0,0.0,0.0,0.5,0.008333333333333333,held_out_decision_confidence_lower_bound
+N3_T15_none,summaries,pair,1.0,inf,12,110.0,702.0,1,1,0,0,0.0,0.0,0.0,0.9958333333333333,0.0,0.0,0.0,0.0,0.5,0.008333333333333333,held_out_decision_confidence_lower_bound
+N3_T15_none,metadata,pair,1.0,inf,72,233.0,766.0,1,1,0,0,0.0,0.0,0.0,0.9958333333333333,0.0,0.0,0.0,0.0,0.5,0.008333333333333333,held_out_decision_confidence_lower_bound

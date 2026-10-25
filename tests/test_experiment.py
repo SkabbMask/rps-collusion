@@ -35,6 +35,15 @@ class TestModelExperiment(unittest.TestCase):
         self.addCleanup(self.check.stop)
         self.addCleanup(self.chat.stop)
 
+    def test_documented_t30_plan_sizes(self):
+        for name, count in (("explore", 69), ("pilot", 119), ("comparison", 439)):
+            cfg = json.loads((Path(__file__).parents[1] / f"configs/qwen-{name}-t30.json").read_text())
+            episodes = list(plan(cfg))
+            self.assertEqual(len(episodes), count)
+            self.assertEqual(sum(ep["n"] * ep["t"] for ep in episodes), count * 90)
+            self.assertGreaterEqual(cfg["n_edge_fit"], 19)
+            self.assertGreaterEqual(cfg["n_calibration"], 19)
+
     def test_full_plan_sizes_and_roles(self):
         cfg = json.loads((Path(__file__).parents[1] / "configs/qwen-experiment.json").read_text())
         episodes = list(plan(cfg))
@@ -124,6 +133,13 @@ class TestModelExperiment(unittest.TestCase):
             self.assertTrue((root / "detection/report.md").exists())
             self.assertTrue((root / "information/report.md").exists())
             self.assertTrue((root / "report.md").exists())
+            self.assertTrue((root / "figures/paper_coordination_case_01.png").exists())
+            self.assertTrue((root / "detection/figures/paper_performance.pdf").exists())
+            self.assertFalse((root / "information/exact_views.json").exists())
+            self.assertFalse((root / "information/figures/paper_exact_views.svg").exists())
+            self.assertTrue((root / "information/figures/paper_information_bounds_01.svg").exists())
+            self.assertIn("Model experiment: stub", (root / "figures/collection_captions.md").read_text())
+            self.assertIn("not a performance estimate", (root / "figures/collection_captions.md").read_text())
             provenance = json.loads((root / "detection/provenance.json").read_text())
             self.assertGreater(provenance["repeated_observations"], 0)
             info = json.loads((root / "information/information.json").read_text())

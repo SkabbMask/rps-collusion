@@ -1,4 +1,4 @@
-"""Generate traceable Markdown, CSV tables and publication-friendly SVG/PNG plots."""
+"""Write detection reports, tables and figures."""
 from __future__ import annotations
 
 import math
@@ -303,6 +303,12 @@ Python: {provenance['python']}. Packages: {provenance['versions']}.
 Dataset SHA-256: `{provenance['dataset_sha256']}`.
 """
     (output / "report.md").write_text(report, encoding="utf-8")
+    from rps.figures import detection
+    detection(output)
+    with (output / "report.md").open("a", encoding="utf-8") as handle:
+        handle.write("\n## Paper figures\n\n"
+                     "[Figures and captions](figures/detection_captions.md). "
+                     "PNG (300 dpi), SVG and PDF are generated from this run's saved predictions.\n")
 
 
 def regenerate(directory):

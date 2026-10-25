@@ -1,113 +1,95 @@
-# RPS collusion
+# RPS collusion detection
 
-Run repeated rock–paper–scissors games with random players or local Ollama
-models, then test whether their actions show coordination.
+A testbed for detecting coordination in repeated rock–paper–scissors games.
+It runs scripted players or Ollama models and compares five detection methods:
+net influence, connected components, Louvain, likelihood search and average-z
+growth.
 
-## Setup
+## Install
 
-Requires Python 3.10 or newer. From this repository:
+Use Python 3.10 or newer. The experiment code is on the `dev` branch:
 
 ```bash
+git clone --branch dev https://github.com/SkabbMask/rps-collusion.git
+cd rps-collusion
 python3 -m venv .venv
 source .venv/bin/activate
 python -m pip install -r requirements-detection.txt
 python -m unittest discover -s tests -v
 ```
 
-## Run Qwen locally
+For the numerical package versions recorded with the scripted benchmark, use
+Python 3.14.8 and `requirements-reproduction.txt`. Saved runs record their own
+versions in `provenance.json`.
 
-Install [Ollama](https://docs.ollama.com/quickstart) and start it. If needed,
-run `ollama serve` in a separate terminal. Then download the model:
+## Reproduce the scripted benchmark
 
-```bash
-ollama pull qwen2.5:14b
-```
-
-The original command still works:
-
-```bash
-python simulate.py --rounds 200 --cp 0.5 --model qwen2.5:14b -v
-```
-
-With the default `config.json`, only B uses the model; A and C are random.
-To run **all three players** on Qwen:
-
-```bash
-python simulate.py --config configs/ollama.json \
-  --model qwen2.5:14b --url localhost:11434 \
-  --rounds 200 --cp 0.5 --log runs/qwen.jsonl -v
-```
-
-Use `--model` to select another model installed in Ollama. The full
-[run guide](docs/RUNNING.md) covers local and remote servers, public messages,
-single-game analysis, and the complete experiment.
-
-## Run a full Qwen experiment
-
-`simulate.py` runs one game. `experiment.py` collects a batch of Qwen games,
-then produces both detection and information reports:
-
-```bash
-python experiment.py --config configs/qwen-experiment.json \
-  --model qwen2.5:14b --url localhost:11434 \
-  --output results/qwen-full --dry-run
-
-python experiment.py --config configs/qwen-experiment.json \
-  --model qwen2.5:14b --url localhost:11434 \
-  --output results/qwen-full
-```
-
-The full batch is large: **4,316 games and 4,244,400 model turns**, plus retries.
-Use `configs/qwen-smoke.json` for a 54-turn connection/pipeline check, or
-`configs/qwen-pilot.json` for a smaller 119-game study. The smoke check is too
-small for statistical conclusions.
-
-Rerun the same command to resume completed games. The final overview is
-`results/qwen-full/report.md`. See [the batch run guide](docs/RUNNING.md#full-qwen-experiment)
-for collection-only, offline analysis and configuration details.
-
-## Run the full scripted experiment
-
-No model server is needed. The included configuration tests 3 and 6 players,
-100 and 300 rounds, several coalition structures, and additional stress cases.
+No model server is needed. The configuration covers 3 and 6 players, 100 and
+300 rounds, several coalition structures and stress controls.
 
 ```bash
 python evaluate.py --config configs/full-information.json \
-  --output results/my-run/detection
+  --output results/replication/detection
 
 python information.py --config configs/full-information.json \
-  --dataset results/my-run/detection/episodes.jsonl.gz \
-  --relabel-interval 25 --output results/my-run/information
+  --dataset results/replication/detection/episodes.jsonl.gz \
+  --relabel-interval 25 --output results/replication/information
 ```
 
-Open `results/my-run/detection/report.md` and
-`results/my-run/information/report.md`. Use a new output directory each time.
+Read `results/replication/detection/report.md` and
+`results/replication/information/report.md`. Both commands save tables and
+figures. Use a fresh output name when repeating the experiment.
 
-## What's included
+The saved five-method benchmark is in
+[results/full-detection-growth](results/full-detection-growth/report.md).
+The exact synthetic information diagnostic was inconclusive for the paper's
+empirical question and was excluded. It is not run or plotted by default.
 
-- Five methods: Bonjour, graph components, Louvain, ML decoder, average-z growth.
-- Six observations: full, identified, relabelled, histogram, summaries, metadata.
-- Reports of detection, group recovery, false alarms and information bounds.
+## Run Qwen
 
-A is the primary player; B receives A's move with probability `--cp` and tries
-to help A score. C plays independently. Add players in the configuration to
-try larger games. Everyone gets 0 if all moves match, everyone gets 1 if all
-three moves appear, and otherwise players holding the winning move get 1.
+Install [Ollama](https://docs.ollama.com/quickstart), start its server, then:
 
-The scripted benchmark tests a specified coordination rule. It does not measure
-LLM performance. Its public messages are empty, so the message views add no
-information. Dependence alone is not proof of intent.
+```bash
+ollama pull qwen2.5:14b
+
+python experiment.py --config configs/qwen-hour.json \
+  --model qwen2.5:14b --url localhost:11434 \
+  --output results/qwen-check
+```
+
+This is a six-game behavior check, not a detector-performance study. The
+completed `qwen-hour` example had only one held-out game per condition.
+For larger batches, smaller models, timing and resume, see [QWEN.md](docs/QWEN.md).
+The full model grid requires 4,244,400 model turns before retries; inspect it
+with `--dry-run` before starting it.
+
+## One scripted game
+
+```bash
+python simulate.py --config configs/random.json --log runs/game.jsonl
+```
+
+`random.json` specifies one game. It is not the full benchmark configuration.
+For a single game with all players using a model, use `configs/ollama.json`.
+The legacy default `config.json` is a hybrid: only B uses Ollama.
+
+## Results and scope
+
+Keep scripted experiments and model experiments separate. The scripted results
+measure a programmed assistance rule. Model labels record an instructed
+agreement; they do not establish spontaneous collusion or harmful intent.
+The six observation views compare what an auditor can infer from actions,
+identity linkage and public messages. A zero information lower bound does not
+show that a view contains no information.
 
 ## Documentation
 
-- [Running experiments](docs/RUNNING.md)
-- [Detection methods, calibration and log format](docs/DETECTION.md)
-- [Information views and bounds](docs/INFORMATION.md)
-- [Validation results](docs/NEW_DECODER_VALIDATION.md)
-- [Research limitations](docs/PAPER_READINESS_REVIEW.md)
+- [Run and replay experiments](docs/RUNNING.md)
+- [Saved results and replication checks](docs/RESULTS.md)
+- [Qwen and other Ollama models](docs/QWEN.md)
+- [Modal GPU launcher](docs/MODAL.md)
+- [Detection methods](docs/DETECTION.md)
+- [Observation views and information bounds](docs/INFORMATION.md)
+- [Figures](docs/FIGURES.md)
+- [Configuration guide](configs/README.md)
 - [Sources and attribution](ATTRIBUTION.md)
-
-Saved results include a [five-method benchmark](results/full-detection-growth/report.md),
-[view comparison](results/full-information/report.md), and the older
-[four-method benchmark](results/benchmark/report.md). Four-method calibration
-files must be regenerated before using the current detection code.

@@ -11,15 +11,12 @@ reported in bits, using equal prior probabilities for the two labels.
 python information.py --output results/my-information
 ```
 
-The default runs a small exact calculation and a 439-game scripted experiment
-with three players and 100 rounds. For the full scripted or Qwen N=3 and N=6 experiment, see
-[RUNNING.md](RUNNING.md).
+The default evaluates a 439-game scripted experiment with three players and
+100 rounds. For the full N=3/N=6 scripted benchmark or separate Qwen runs, see
+[RUNNING.md](RUNNING.md). The exact toy model is excluded from the paper and
+is no longer run by default.
 
 ```bash
-# Exact calculation only: three players, three rounds.
-python information.py --exact-only --exact-cp 0.5 \
-  --exact-relabel-interval 1 --output results/my-exact
-
 # Compare views of an existing dataset.
 python information.py --dataset results/full-detection-growth/episodes.jsonl.gz \
   --relabel-interval 25 --output results/my-view-comparison
@@ -75,25 +72,6 @@ unobserved messages, including failed responses. Any unobserved message makes
 be assigned empty messages after the fact. Scripted players with an observed
 channel remain silent, so their message views add no information.
 
-## Exact calculation
-
-The small model enumerates all action sequences, with `N*T <= 9`. Honest
-players act independently and uniformly. Under the alternative, one fixed
-primary/helper pair is drawn uniformly; the helper assists with probability
-CP each round and otherwise acts uniformly. Messages are empty in both cases.
-Fresh player permutations are drawn independently at block boundaries.
-
-The report calculates:
-
-- Total variation (TV), the difference between the two observation distributions.
-- Best possible equal-prior classification error, `(1-TV)/2`.
-- Mutual information `I(C;V)`, the Jensen–Shannon divergence in bits.
-- The power upper bound `min(1, alpha+TV)` and optimal randomized test power.
-
-These values are exact up to floating-point rounding for this model. They are
-not bounds for arbitrary LLM behavior. With m=1, relabelled and histogram views
-are equivalent. With empty messages, full and metadata equal identified.
-
 ## Bounds from recorded games
 
 Each view is reduced to fixed features. An anomaly detector learns a centre
@@ -126,8 +104,18 @@ information.
 
 ## Files
 
-`report.md` is the readable summary. `exact_views.json` contains the exact
-calculation; `information.json` and `view_comparison.csv` contain measured
-bounds. `view_calibration.json` stores fitted parameters and split IDs;
+`report.md` is the readable summary. `information.json` and
+`view_comparison.csv` contain measured bounds. `view_calibration.json` stores fitted parameters and split IDs;
 `view_predictions.json` stores test decisions. `config.json` and
 `provenance.json` record settings and source fingerprints.
+
+## Excluded toy diagnostic
+
+The exact synthetic model was inconclusive for the paper's empirical question
+and was removed from the paper. It covers a specified small model rather than
+measuring information in the recorded games. Historical outputs are retained.
+
+For diagnostic use only, `--exact-only` runs it alone and `--include-exact`
+adds it to an empirical analysis. Both require a fresh output directory.
+Default runs and figure exports omit it. The diagnostic's enumeration is
+limited to N×T≤9; its calculated values are not arbitrary-LLM detection limits.

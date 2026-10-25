@@ -1,0 +1,27 @@
+{
+  "source": "external labeled logs",
+  "base_revision": "def2d5c555b961fc89a9153e6912b1d124286555",
+  "python": "3.14.8",
+  "allow_repeated_observations": true,
+  "repeated_observations": 0,
+  "platform": "Linux-7.1.5+kali-amd64-x86_64-with-glibc2.43",
+  "versions": {
+    "numpy": "2.5.4",
+    "scipy": "1.18.1",
+    "networkx": "3.7",
+    "matplotlib": "3.11.2",
+    "scikit-learn": "1.9.1"
+  },
+  "dataset_sha256": "b555d78748d7ba3893cb7870c01df3954bf9312f1a6ff587d077123aed2f11f3",
+  "config_sha256": "7a6757ed347356cc41e6a7848cf07fd441ddfb3ff198f77eb460af522ab73d53",
+  "episodes": 6,
+  "test_episodes": 2,
+  "group_counts": {
+    "N3_T15_none": {
+      "edge_fit": 2,
+      "calibration": 2,
+      "test": 2
+    }
+  },
+  "evaluation_seconds": 0.044499184004962444
+}

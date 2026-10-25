@@ -1,7 +1,28 @@
 runs/
 __pycache__/
 .env
+.env.*
+!.env.example
 *.egg-info/
 build/
 dist/
 .venv/
+
+# Local collection state and interrupted games
+results/qwen-full/
+results/qwen-pilot/
+results/qwen-smoke/
+results/local-*/
+results/replication/
+results/replay/
+results/qwen-check/
+results/qwen-timing/
+*.partial.jsonl
+**/attempts/
+**/analysis-attempts/
+.DS_Store
+.pytest_cache/
+
+# Optional toy-model plots are not paper artifacts
+**/paper_exact_views.*
+**/progress.json

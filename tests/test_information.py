@@ -1,9 +1,11 @@
 import copy
 import itertools
+import json
 import tempfile
 import unittest
 from collections import defaultdict
 from pathlib import Path
+from unittest.mock import patch
 
 import numpy as np
 
@@ -15,6 +17,35 @@ from rps.info.features import project
 from rps.observe.features import symbols
 from rps.observe.views import full_view, metadata_view
 from rps.players import OllamaPlayer, parse_policy
+
+
+class TestInformationCLI(unittest.TestCase):
+    def run_cli(self, extra):
+        from information import main
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            cfg = {"seed": 1, "players": [3], "rounds": [10],
+                   "collusion_probabilities": [1], "n_edge_fit": 2,
+                   "n_calibration": 2, "n_test": 1}
+            config = root / "config.json"
+            config.write_text(json.dumps(cfg))
+            argv = ["information.py", "--config", str(config),
+                    "--output", str(root / "output"), *extra]
+            with patch("sys.argv", argv), patch("information.evaluate_views", return_value={}), \
+                    patch("information.enumerate_views", return_value={"diagnostic": True}) as exact, \
+                    patch("information.write_report") as report:
+                main()
+                return exact.call_count, report.call_args.args[2]
+
+    def test_normal_analysis_omits_excluded_diagnostic(self):
+        calls, result = self.run_cli([])
+        self.assertEqual(calls, 0)
+        self.assertIsNone(result)
+
+    def test_diagnostic_requires_explicit_option(self):
+        calls, result = self.run_cli(["--exact-only"])
+        self.assertEqual(calls, 1)
+        self.assertEqual(result, {"diagnostic": True})
 
 
 class TestInformationMath(unittest.TestCase):

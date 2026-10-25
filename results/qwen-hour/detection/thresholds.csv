@@ -1,0 +1,6 @@
+group,method,edge_threshold,threshold,n_edge_fit,n_calibration
+N3_T15_none,bonjour,inf,0.05,2,2
+N3_T15_none,graph_components,inf,inf,2,2
+N3_T15_none,graph_louvain,inf,inf,2,2
+N3_T15_none,decoder,inf,inf,2,2
+N3_T15_none,growth,inf,inf,2,2

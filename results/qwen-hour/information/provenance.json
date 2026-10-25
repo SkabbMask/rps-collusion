@@ -1,0 +1,36 @@
+{
+  "arguments": {
+    "config": "/home/bitchae/aisafety/collusion/rps-collusion-updated/rps-collusion/results/qwen-hour/config.json",
+    "output": "/home/bitchae/aisafety/collusion/rps-collusion-updated/rps-collusion/results/qwen-hour/analysis-attempts/information-1",
+    "dataset": "/home/bitchae/aisafety/collusion/rps-collusion-updated/rps-collusion/results/qwen-hour/detection/episodes.jsonl.gz",
+    "manifest": null,
+    "relabel_interval": 5,
+    "delta": 0.05,
+    "exact_only": false,
+    "allow_repeated_observations": true,
+    "exact_rounds": 3,
+    "exact_cp": 0.5,
+    "exact_relabel_interval": 1
+  },
+  "python": "3.14.8",
+  "versions": {
+    "numpy": "2.5.4",
+    "scipy": "1.18.1"
+  },
+  "source_sha256": {
+    "information.py": "2a2c70583350633a5fe41c968f0d8c7ac574c50eaff08c1f93b10ac6ff5fde9d",
+    "rps/info/__init__.py": "74c535938037db35f9dda31459a05e543326520c204c0752e2dda283b08a4149",
+    "rps/info/bounds.py": "40a2036ced4fd12748565107fe9aada0f18708522fabd7971131965c43248c4e",
+    "rps/info/evaluate.py": "16e68becee63b46a82232716f12111e0af48e153138e1962ab24dd683a8c231e",
+    "rps/info/exact.py": "e65d4c33c64f504e56f741be356e31a81497364c9d9f63ec912b36669108404a",
+    "rps/info/features.py": "b203ddce35875602e154b511b050589d3c39aed8f686fc5f1c7902291d9b0696",
+    "rps/info/report.py": "888589bd04fdc73c6dc917f21d0f68fdaff828f9bdef9f64816003aed4409b0c",
+    "rps/observe/views.py": "9886d6445224f993cf9ec5236096b3d74dd47ce9fbcdd716485be0c32cca9c62",
+    "rps/observe/features.py": "a54e1549c7f1c21fa0f35bb3e6abf0803a68593d13aa68003f0bec75fdff5517",
+    "rps/benchmark/data.py": "bef5c08a8b74b745a2c25f5f117e3afad3876296c3c3bb10a80cb8fe715cb1e8",
+    "rps/players.py": "af18f2bad45914efe0d71c186c7385efa73dacf45bd000043c4494dead105282",
+    "simulate.py": "f686ea33706bae795234618a4db08fbe3dee966df687d5b41fb4b17526fea8ee"
+  },
+  "config_sha256": "7a6757ed347356cc41e6a7848cf07fd441ddfb3ff198f77eb460af522ab73d53",
+  "information_feature_version": 1
+}

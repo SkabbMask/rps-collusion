@@ -1,0 +1,18 @@
+{
+  "inputs_sha256": {
+    "config.json": "b219ae95c3245af9ef29c2b489d56628658c40e0a40d9fe0f1f997b4bfd75fe9",
+    "manifest.json": "f5788d2a506346c7c3bf08cb117c115cb48664979744e8483b5003360b19bdb5",
+    "quality.json": "6600d439f86918da3bfeac4662700610e03e6b8cfe2674835ea919f524d5894a",
+    "figure_exporter.py": "14fbda0ce10496efdd8242192e82d9917d527b81f782bfd354864f163c6b033c",
+    "logs/N3_T15_none/test/pair/cp1/rep0.jsonl": "22a4cc137bbf3434cbf0aea69536d2168985c04df35a77954a0fffe51eb193c7"
+  },
+  "files": [
+    "paper_coordination_case_01.png",
+    "paper_coordination_case_01.svg",
+    "paper_coordination_case_01.pdf",
+    "collection_captions.md"
+  ],
+  "options": {},
+  "matplotlib": "3.11.2",
+  "scope": "saved results only; no new experiments"
+}

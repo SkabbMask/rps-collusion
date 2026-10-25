@@ -1,0 +1,38 @@
+{
+  "inputs_sha256": {
+    "exact_views.json": "6dc4f392540a9169310a1219831f979de7f572f8cd7fd1c2cb568b3b781f3508",
+    "information.json": "8bb8fa0354ea860484a0b55cd71b56dbe53be1097289a59ff9b16df9bc5555c2",
+    "config.json": "d389705cb33f4467ae20ab81be6d69140b026f1952b5367571516fab21799fc8",
+    "provenance.json": "feb5ef5355348e1b5b0f5583a68e24ce6138b653ac4a8dc1fcb406db21cfe523",
+    "figure_exporter.py": "14fbda0ce10496efdd8242192e82d9917d527b81f782bfd354864f163c6b033c"
+  },
+  "files": [
+    "paper_information_bounds_01.png",
+    "paper_information_bounds_01.svg",
+    "paper_information_bounds_01.pdf",
+    "paper_information_bounds_02.png",
+    "paper_information_bounds_02.svg",
+    "paper_information_bounds_02.pdf",
+    "paper_information_bounds_03.png",
+    "paper_information_bounds_03.svg",
+    "paper_information_bounds_03.pdf",
+    "paper_information_bounds_04.png",
+    "paper_information_bounds_04.svg",
+    "paper_information_bounds_04.pdf",
+    "paper_information_bounds_05.png",
+    "paper_information_bounds_05.svg",
+    "paper_information_bounds_05.pdf",
+    "paper_information_bounds_06.png",
+    "paper_information_bounds_06.svg",
+    "paper_information_bounds_06.pdf",
+    "paper_information_bounds_07.png",
+    "paper_information_bounds_07.svg",
+    "paper_information_bounds_07.pdf",
+    "information_captions.md"
+  ],
+  "options": {
+    "include_exact": false
+  },
+  "matplotlib": "3.11.2",
+  "scope": "saved results only; no new experiments"
+}

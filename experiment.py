@@ -38,11 +38,17 @@ def analyze(output, cfg):
                        cwd=root, check=True)
         temporary.replace(destination)
     quality = json.loads((output / "quality.json").read_text())
+    # Also backfill figures when resuming a collection with completed old reports.
+    from rps.figures import regenerate
+    regenerate(output)
     (output / "report.md").write_text(
         f"# Model experiment\n\nModel: {state['model']['name']}\n\n"
         f"Completed games: {quality['games']}. Random fallbacks after parsing failures: {quality['parse_failures']}. "
         f"Signals followed: {quality['signals_followed']}/{quality['signals']}.\n\n"
         "- [Detection results](detection/report.md)\n- [Information views](information/report.md)\n\n"
+        "- [Model-game figures](figures/collection_captions.md)\n"
+        "- [Detection figures](detection/figures/detection_captions.md)\n"
+        "- [Information figures](information/figures/information_captions.md)\n\n"
         "Labels describe instructed coordination, not whether a model complied. See quality.json and "
         "the per-game metadata for parsing failures and signal compliance.\n", encoding="utf-8")
     print(f"Report: {output / 'report.md'}")

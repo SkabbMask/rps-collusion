@@ -1,0 +1,7 @@
+# Versions recorded in results/full-detection-growth/provenance.json.
+# Recorded interpreter: Python 3.14.8. Use requirements-detection.txt otherwise.
+numpy==2.5.4
+scipy==1.18.1
+networkx==3.7
+matplotlib==3.11.2
+scikit-learn==1.9.1

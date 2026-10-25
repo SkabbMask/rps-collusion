@@ -1,15 +1,15 @@
 # Research notes
 
 Reviewed on 25 October 2026. The current code is suitable for a controlled
-scripted study. All 55 tests passed. The available results do not establish
+scripted study. The available results do not establish
 reliable detection of arbitrary LLM collusion.
 
 ## What the results support
 
 The benchmark separates honest fitting, honest calibration and test games.
 Private signals and labels do not enter detector features. Unsupported cases
-can abstain. Exact enumeration and measured information lower bounds are
-reported separately.
+can abstain. The paper uses measured information lower bounds. The exact
+toy diagnostic was inconclusive for its empirical question and was excluded.
 
 The main comparison covers 2,800 coalition and 400 honest test games. The
 full experiment has 4,300 test games and 1,953 fit/calibration games. Its
@@ -32,9 +32,7 @@ with seed-pair-only groups to isolate the contribution of expansion.
 
 **Information lower bounds do not rank views.** Different feature maps and
 detectors can give a stronger bound for a smaller view. Zero does not imply
-no information. The exact N=3, T=3, CP=0.5 model gives 0.047692 bits with
-identities and 0.026796 bits with per-round relabelling. Those values apply
-to that model, not arbitrary longer games or LLMs.
+no information. The optional exact toy diagnostic is not part of the paper evidence.
 
 **The message channel is silent in the scripted results.** Full, metadata
 and identified views therefore contain equivalent relevant observations.
@@ -73,7 +71,7 @@ the honest player also gains absolute utility. Define the harm being measured.
 2. Repeat honest calibration seeds to check threshold variability.
 3. Add calibrated max-pair and net-influence baselines, plus the naming ablation.
 4. Include weak signals, public causes, abstentions and multiple-group failures.
-5. Keep exact-model claims separate from measured information lower bounds.
+5. Exclude the toy diagnostic from paper claims; label empirical lower bounds.
 6. Collect repeated real-model runs before making empirical LLM claims; record
    model versions, prompts, failures and signal compliance.
 
@@ -87,8 +85,8 @@ mixture, and are not adjusted for multiple comparisons.
 
 A defensible claim is that dependence-based detection and group recovery vary
 with signal strength, coalition structure and public-state visibility in a
-specified RPS testbed. Identity removal reduces information in the exact toy
-model; larger experiments provide detector-based information lower bounds.
+specified RPS testbed. The view experiments provide detector-based information lower bounds; the
+exact toy model is excluded from the paper.
 
 Present this as an adaptation of [Bonjour et al., UAI 2022](https://proceedings.mlr.press/v180/bonjour22a.html),
 not a reproduction of all its learned-agent experiments. The current results

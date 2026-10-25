@@ -1,106 +1,115 @@
-# Qwen batch experiments
+# Qwen and other Ollama models
 
-Install dependencies and start Ollama as shown in [RUNNING.md](RUNNING.md).
+Every player in `experiment.py` uses the selected model. Each game starts a
+new session; fitting, calibration and test games are separate.
 
-The single-game JSON files above are not batch experiments. Use `experiment.py`
-to collect independent Qwen games and run both analyses automatically. Every
-player uses the selected model, including the honest players.
+## Start locally
 
-First inspect the plan without contacting Ollama:
+Install [Ollama](https://docs.ollama.com/quickstart). If its server is not
+already running, start `ollama serve` in another terminal.
 
 ```bash
-python experiment.py --config configs/qwen-experiment.json \
+ollama pull qwen2.5:14b
+python experiment.py --config configs/qwen-hour.json \
   --model qwen2.5:14b --url localhost:11434 \
-  --output results/qwen-full --dry-run
+  --output results/qwen-check
 ```
 
-Then start the run:
+This six-game check is useful for inspecting responses, compliance and output
+files. Its two calibration games force infinite cutoffs at 5%, so it cannot
+validate the calibrated detectors. The saved `results/qwen-hour` case has one
+unassigned and one coalition test game.
+
+## Choose a batch
+
+| Configuration | N | Rounds | Games | Model turns |
+| --- | --- | ---: | ---: | ---: |
+| `qwen-smoke.json` | 3 | 3 | 6 | 54 |
+| `qwen-hour.json` | 3 | 15 | 6 | 270 |
+| `qwen-explore-t30.json` | 3 | 30 | 69 | 6,210 |
+| `qwen-pilot-t30.json` | 3 | 30 | 119 | 10,710 |
+| `qwen-comparison-t30.json` | 3 | 30 | 439 | 39,510 |
+| `qwen-pilot.json` | 3 | 100 | 119 | 35,700 |
+| `qwen-experiment.json` | 3, 6 | 100, 300 | 4,316 | 4,244,400 |
+
+Paths are under `configs/`. Turns exclude parsing retries. The first two
+batches are checks only. The 30-round batches can still have low detection
+power. A finite threshold is not evidence of reliable performance.
+
+Inspect a plan without contacting the server:
 
 ```bash
-python experiment.py --config configs/qwen-experiment.json \
+python experiment.py --config configs/qwen-pilot-t30.json \
   --model qwen2.5:14b --url localhost:11434 \
-  --output results/qwen-full
+  --output results/qwen-pilot-t30 --dry-run
 ```
 
-The full configuration collects 4,316 games across N=3 and N=6, T=100 and
-T=300: one pair, a three-player coalition, and two pairs where applicable.
-It needs **4,244,400 model turns**, before retries. The artificial parity and
-public-state stress models remain part of the separate scripted benchmark.
-
-Two smaller configurations are available:
-
-| Configuration | Games | Model turns | Purpose |
-| --- | ---: | ---: | --- |
-| `configs/qwen-smoke.json` | 6 | 54 | Check the server, collection and report pipeline |
-| `configs/qwen-pilot.json` | 119 | 35,700 | Smaller N=3, T=100 study |
-| `configs/qwen-experiment.json` | 4,316 | 4,244,400 | Full Qwen grid |
-
-For example, check the pipeline first:
+Remove `--dry-run` to collect games and run both analyses. Use a fresh output
+name when changing the model or settings. A smaller model is a separate
+population; do not reuse the 14B calibration:
 
 ```bash
-python experiment.py --config configs/qwen-smoke.json \
-  --url localhost:11434 --output results/qwen-smoke
+ollama pull qwen2.5:1.5b
+python experiment.py --config configs/qwen-pilot-t30.json \
+  --model qwen2.5:1.5b --url localhost:11434 \
+  --output results/qwen-1p5b-pilot-t30
 ```
 
-The smoke configuration has only two honest calibration games, so the added
-detectors receive infinite acceptance thresholds. Use it as a connection and
-pipeline check, not a performance study. Copy a configuration and edit sample sizes, models or rounds
-before starting a larger run; `--dry-run` shows the resulting size.
+## Timing
 
-Progress shows elapsed time and estimated collection time remaining every 30
-seconds and after each game. The estimate starts after the first completed
-round and uses model turns per second measured in the current session,
-including retries. On resume it estimates the remaining games from fresh
-measurements. Speed can change with player count, prompts and model load;
-the detection and information analyses run afterward and are not included.
-A running process needs to be restarted to display the new progress output.
+Progress prints elapsed time and a collection ETA every 30 seconds. It uses
+completed rounds in the current session and includes time spent on retries;
+analysis runs afterward. Early estimates can change as prompts and load change.
 
-### Output and resume
-
-The run writes:
-
-```text
-results/qwen-full/report.md               # overview and model compliance
-results/qwen-full/detection/report.md     # five detectors
-results/qwen-full/information/report.md   # six information views
-results/qwen-full/manifest.json           # logs, labels, splits and seeds
-results/qwen-full/quality.json            # parsing failures and compliance
-results/qwen-full/logs/                   # game logs and metadata
-```
-
-Run the same command again to resume. Saved games are checked by hash and
-skipped; an interrupted game restarts from its first round, with its old
-partial log kept in `attempts/`. Settings, collection source and model weights
-must match the saved run. Do not update the model during collection.
-
-To collect at most five new games and then stop:
+Time two games before choosing a large batch:
 
 ```bash
-python experiment.py --config configs/qwen-experiment.json \
-  --url localhost:11434 --output results/qwen-full --limit 5
+time python experiment.py --config configs/qwen-pilot-t30.json \
+  --model qwen2.5:14b --url localhost:11434 \
+  --output results/qwen-timing --limit 2 --collect-only
 ```
 
-To collect without analysis, add `--collect-only`. Once all games exist,
-analysis can run without a model server:
+These two games contain 180 model turns. Divide that count by elapsed seconds
+to estimate aggregate throughput. They are honest games; coalition games may
+run at a different speed. At 0.1 turns/s, the 10,710-turn pilot needs about
+29 hours 45 minutes before analysis. A one-hour limit does not make it finish:
 
 ```bash
-python experiment.py --output results/qwen-full --analyze-only
+timeout --signal=INT --kill-after=30s 1h python experiment.py \
+  --config configs/qwen-hour.json --model qwen2.5:14b \
+  --url localhost:11434 --output results/qwen-check
 ```
 
-### Labels and failed responses
+This Linux command interrupts after an hour and forces termination 30 seconds
+later if needed. It can leave an incomplete collection or report. Avoid sharing
+the same Ollama server with another experiment when measuring speed.
 
-Honest fit/calibration/test games contain only honest-role prompts. Coalition
-games add assistant prompts and private signals. Labels mean an instructed
-agreement with CP>0; they do not guarantee the model complied. Role assignments
-and seeds are set before responses are seen. Parsing failures are retained as
-played random fallback moves and counted, not resampled until successful.
-Missing messages can make full/metadata views unavailable for that group.
+## Resume and analyse
 
-Separately collected games may legitimately have identical actions, especially
-if the model always chooses one move. The batch analysis allows these repeated
-observations and records their count. The lower-level commands still reject
-repeated observations by default; use `--allow-repeated-observations` only when
-independent collection is established. Duplicate IDs and reused cross-split
-seeds remain errors. Repeated output is not evidence of independent sampling
-by itself.
+Repeat the original command to skip completed games. Source, configuration and
+model identity must match. An interrupted game restarts at round one; the old
+attempt is retained. Do not run two writers against the same output directory.
 
+For a completed collection, analysis requires no model server:
+
+```bash
+python experiment.py --output results/qwen-check --analyze-only
+```
+
+`--collect-only` skips analysis; `--limit N` collects at most N new games.
+The overview is `report.md`, with detection and information reports in their
+own subdirectories. Logs, labels, seeds, model identity, hashes and compliance
+counts are saved alongside them. Exact toy calculations are no longer included
+in normal analysis; old reports may still contain them.
+
+## Response handling and labels
+
+Labels mean an instructed agreement, not verified compliance or harm.
+Parsing failures retain a random fallback action and are counted. Transport
+failures stop collection. Public messages are observed only when recorded;
+missing messages are not replaced with silence.
+
+The collector allows genuinely independent model games with identical observed
+trajectories and records repetition counts. It still rejects duplicate IDs and
+cross-split seed reuse. See [INFORMATION.md](INFORMATION.md) for view availability
+and [MODAL.md](MODAL.md) for optional GPU collection.

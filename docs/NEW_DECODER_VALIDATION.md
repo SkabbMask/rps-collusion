@@ -4,7 +4,7 @@ Validated on 25 October 2026 using growth source revision
 `1bea281244ad2d756b9b507145b2046fefcf1582`. See
 [ATTRIBUTION.md](../ATTRIBUTION.md) for the source mapping.
 
-- All 55 tests passed, including reference growth sequences.
+- Reference fixtures check the growth sequence and group selection.
 - Full evaluation: 6,253 games, 4,300 test games, 21,500 method decisions.
 - The original four methods' 17,200 decisions matched the previous full run
   for flags, abstention, scores, groups and recovery metrics. Timing was excluded.
@@ -34,6 +34,5 @@ method for every scenario.
 Follow [RUNNING.md](RUNNING.md), or rerun saved episodes using `--dataset`.
 The validation dataset SHA-256 is
 `63bece830ad7a898b85fd97886466996a2bc31cd19da41d0bab645397a58ec1f`.
-The recorded environment was Python 3.14.8, NumPy 2.4.6, SciPy 1.17.1,
-NetworkX 3.4.2, Matplotlib 3.10.9+dfsg1 and scikit-learn 1.9.0. Consult each
-run's `provenance.json` for its own versions and timings.
+For numerical package versions, use the saved `provenance.json` and
+`requirements-reproduction.txt`. Timing is machine-dependent.
