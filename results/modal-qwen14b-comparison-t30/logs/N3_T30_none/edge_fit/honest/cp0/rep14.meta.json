@@ -1,0 +1,13 @@
+{
+  "id": "N3_T30_none/edge_fit/honest/cp0/rep14",
+  "seed": 1850453769798949975,
+  "collection_fingerprint": "f9e0a5fea2ddfa633da6841e02a72709d941a2cf270dba40a6d2421282768531",
+  "log_sha256": "b05988a394a9239f4854ed5291b74e9a4592854cdda43cb57c90910d42a5be8b",
+  "parse_failures": {
+    "A": 0,
+    "B": 0,
+    "C": 0
+  },
+  "signals": 0,
+  "signals_followed": 0
+}

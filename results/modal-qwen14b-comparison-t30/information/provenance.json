@@ -1,0 +1,37 @@
+{
+  "arguments": {
+    "config": "/__modal/volumes/vo-Hj3swptC67dR5VbdBmCqe8/modal-qwen14b-comparison-t30/config.json",
+    "output": "/__modal/volumes/vo-Hj3swptC67dR5VbdBmCqe8/modal-qwen14b-comparison-t30/analysis-attempts/information-1",
+    "dataset": "/__modal/volumes/vo-Hj3swptC67dR5VbdBmCqe8/modal-qwen14b-comparison-t30/detection/episodes.jsonl.gz",
+    "manifest": null,
+    "relabel_interval": 10,
+    "delta": 0.05,
+    "include_exact": false,
+    "exact_only": false,
+    "allow_repeated_observations": true,
+    "exact_rounds": 3,
+    "exact_cp": 0.5,
+    "exact_relabel_interval": 1
+  },
+  "python": "3.12.1",
+  "versions": {
+    "numpy": "2.5.4",
+    "scipy": "1.18.1"
+  },
+  "source_sha256": {
+    "information.py": "1b7220c50f290be14303de5ec6790d5c83d88acbe2ad79fd994cc49f9be7aa2b",
+    "rps/info/__init__.py": "74c535938037db35f9dda31459a05e543326520c204c0752e2dda283b08a4149",
+    "rps/info/bounds.py": "40a2036ced4fd12748565107fe9aada0f18708522fabd7971131965c43248c4e",
+    "rps/info/evaluate.py": "16e68becee63b46a82232716f12111e0af48e153138e1962ab24dd683a8c231e",
+    "rps/info/exact.py": "e65d4c33c64f504e56f741be356e31a81497364c9d9f63ec912b36669108404a",
+    "rps/info/features.py": "b203ddce35875602e154b511b050589d3c39aed8f686fc5f1c7902291d9b0696",
+    "rps/info/report.py": "51b83b87b2aa3ef908118babd404fb6b661d299e188593b70c6c59681591964e",
+    "rps/observe/views.py": "9886d6445224f993cf9ec5236096b3d74dd47ce9fbcdd716485be0c32cca9c62",
+    "rps/observe/features.py": "a54e1549c7f1c21fa0f35bb3e6abf0803a68593d13aa68003f0bec75fdff5517",
+    "rps/benchmark/data.py": "bef5c08a8b74b745a2c25f5f117e3afad3876296c3c3bb10a80cb8fe715cb1e8",
+    "rps/players.py": "af18f2bad45914efe0d71c186c7385efa73dacf45bd000043c4494dead105282",
+    "simulate.py": "f686ea33706bae795234618a4db08fbe3dee966df687d5b41fb4b17526fea8ee"
+  },
+  "config_sha256": "d67b5b77bd830aca78aadfb655a3d0f85a42c272a61b95fe6cc5ba76e1a32365",
+  "information_feature_version": 1
+}

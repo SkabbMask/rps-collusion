@@ -1,0 +1,62 @@
+{
+  "schema_version": 1,
+  "fingerprint": "f9e0a5fea2ddfa633da6841e02a72709d941a2cf270dba40a6d2421282768531",
+  "config": {
+    "seed": 20261025,
+    "players": [
+      3
+    ],
+    "rounds": [
+      30
+    ],
+    "collusion_probabilities": [
+      0.5,
+      1.0
+    ],
+    "scenarios": {
+      "pair": [
+        0.5,
+        1.0
+      ]
+    },
+    "n_edge_fit": 40,
+    "n_calibration": 99,
+    "n_test": 100,
+    "state": "none",
+    "alpha": 0.05,
+    "relabel_interval": 10,
+    "defaults": {
+      "backend": "ollama",
+      "model": "qwen2.5:14b",
+      "options": {
+        "temperature": 1.0
+      },
+      "strategy": "mixed",
+      "history_window": 5,
+      "timeout": 120,
+      "emit_messages": true,
+      "url": "localhost:11434"
+    },
+    "detector": {
+      "permutations": 99,
+      "min_pair_rounds": 20,
+      "min_state_rounds": 10,
+      "k_max": 5,
+      "seed": 20261025,
+      "growth_frac": 0.25
+    }
+  },
+  "source_sha256": {
+    "rps/benchmark/collect.py": "9e57cc6120c7b32c4722c8df0c107098a999fb7fb50140b51d747efb0f3c09e5",
+    "simulate.py": "f686ea33706bae795234618a4db08fbe3dee966df687d5b41fb4b17526fea8ee",
+    "rps/players.py": "af18f2bad45914efe0d71c186c7385efa73dacf45bd000043c4494dead105282",
+    "rps/ollama.py": "80b8f0d43e9ddd49dde24c2fa431e18beaf338995f63c53b01afd2f5a2badb15",
+    "rps/game.py": "f77870ba3030c28d39c623e74f40e68b77bb5afbc5689ff39261b2ecc1e5bdd1",
+    "rps/benchmark/data.py": "bef5c08a8b74b745a2c25f5f117e3afad3876296c3c3bb10a80cb8fe715cb1e8"
+  },
+  "model": {
+    "name": "qwen2.5:14b",
+    "digest": "7cdf5a0187d5c58cc5d369b255592f7841d1c4696d45a8c8a9489440385b22f6"
+  },
+  "n_planned": 439
+}

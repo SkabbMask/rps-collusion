@@ -1,0 +1,13 @@
+{
+  "id": "N3_T30_none/test/pair/cp0.5/rep81",
+  "seed": 16514427628184843138,
+  "collection_fingerprint": "f9e0a5fea2ddfa633da6841e02a72709d941a2cf270dba40a6d2421282768531",
+  "log_sha256": "113b5e974f6dffa32eaa0bd5ca568f0ff31ac5b676c1269eacd86baeb36ac1dd",
+  "parse_failures": {
+    "A": 0,
+    "B": 0,
+    "C": 0
+  },
+  "signals": 16,
+  "signals_followed": 13
+}
