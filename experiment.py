@@ -63,12 +63,15 @@ def main():
     parser.add_argument("--env", default=".env")
     parser.add_argument("--dry-run", action="store_true", help="print the plan without contacting Ollama")
     parser.add_argument("--limit", type=int, help="collect at most this many new games, then stop")
+    parser.add_argument("--workers", type=int, default=1, help="games played at once against the server")
     mode = parser.add_mutually_exclusive_group()
     mode.add_argument("--collect-only", action="store_true")
     mode.add_argument("--analyze-only", action="store_true")
     args = parser.parse_args()
     if args.limit is not None and args.limit < 1:
         parser.error("limit must be positive")
+    if args.workers < 1:
+        parser.error("workers must be positive")
     state_file = Path(args.output) / "collection.json"
     if args.config:
         cfg = json.loads(Path(args.config).read_text())
@@ -89,7 +92,7 @@ def main():
         if not state_file.exists() or cfg != json.loads(state_file.read_text())["config"]:
             parser.error("analysis requires an existing collection with matching settings")
         analyze(args.output, cfg)
-    elif collect(cfg, args.output, limit=args.limit) and not args.collect_only:
+    elif collect(cfg, args.output, limit=args.limit, workers=args.workers) and not args.collect_only:
         analyze(args.output, cfg)
 
 

@@ -1,9 +1,12 @@
 """Run an Ollama experiment on Modal; see docs/RUNNING.md."""
 from pathlib import Path
+import os
 import re
 import modal
 
 ROOT = Path(__file__).resolve().parent
+# The GPU is fixed when the function is defined, so it is chosen at launch: RPS_GPU=A100 modal run ...
+GPU = os.environ.get("RPS_GPU", "L4")
 app = modal.App("rps-experiments")
 results = modal.Volume.from_name("rps-results", create_if_missing=True)
 models = modal.Volume.from_name("rps-ollama-models", create_if_missing=True)
@@ -24,13 +27,13 @@ for directory in ("rps", "configs"):
                                 ignore=["**/__pycache__/**", "**/*.pyc"])
 
 
-@app.function(image=image, gpu="L4", cpu=4, memory=16384,
+@app.function(image=image, gpu=GPU, cpu=4, memory=16384,
               volumes={"/results": results, "/models": models},
               timeout=24 * 60 * 60, max_containers=1)
 def run(config: str = "configs/qwen-pilot-t30.json", model: str = "qwen2.5:14b",
         run_name: str = "qwen14b-pilot-t30", limit: int = 0,
         max_seconds: int = 7200, collect_only: bool = False,
-        analyze_only: bool = False):
+        analyze_only: bool = False, workers: int = 1):
     """Run or resume a saved batch. max_seconds includes model startup and analysis."""
     import json
     import subprocess
@@ -43,8 +46,8 @@ def run(config: str = "configs/qwen-pilot-t30.json", model: str = "qwen2.5:14b",
     config_path = (Path("/repo") / config).resolve()
     if not config_path.is_relative_to(Path("/repo/configs")) or not config_path.is_file():
         raise ValueError("config must be a JSON file under configs/")
-    if limit < 0 or not 0 < max_seconds <= 23 * 60 * 60:
-        raise ValueError("limit must be nonnegative; max-seconds must be 1..82800")
+    if limit < 0 or not 0 < max_seconds <= 23 * 60 * 60 or not 1 <= workers <= 32:
+        raise ValueError("limit must be nonnegative; max-seconds must be 1..82800; workers 1..32")
     if collect_only and analyze_only:
         raise ValueError("choose collect-only or analyze-only")
     deadline = time.monotonic() + max_seconds
@@ -60,6 +63,8 @@ def run(config: str = "configs/qwen-pilot-t30.json", model: str = "qwen2.5:14b",
                "--output", f"/results/{run_name}"]
     if limit:
         command += ["--limit", str(limit)]
+    if workers > 1:
+        command += ["--workers", str(workers)]
     if collect_only:
         command += ["--collect-only"]
     if analyze_only:
@@ -67,7 +72,9 @@ def run(config: str = "configs/qwen-pilot-t30.json", model: str = "qwen2.5:14b",
     server = None
     try:
         if not analyze_only:
-            server = subprocess.Popen(["ollama", "serve"])
+            # One slot per concurrent player call: three players in each of `workers` games.
+            server = subprocess.Popen(["ollama", "serve"], env={
+                **os.environ, "OLLAMA_NUM_PARALLEL": str(max(3, 3 * workers))})
             for attempt in range(120):
                 remaining()
                 if server.poll() is not None:

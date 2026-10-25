@@ -1,10 +1,13 @@
 """Collect independent Ollama games and save a resumable labeled manifest."""
+from concurrent.futures import ThreadPoolExecutor, as_completed
+import contextlib
 import copy
 import hashlib
 import json
 import math
 from pathlib import Path
 import random
+import threading
 import urllib.request
 
 from simulate import run
@@ -14,6 +17,11 @@ from rps.observe.features import load_jsonl, symbols
 from rps.ollama import normalize_url
 from .data import seed_for
 from .progress import GameProgress
+
+COMPATIBLE_COLLECTORS = (
+    "20e3f4081c91773edb6d9835d19d79cb7644f197d71804fe233b851951bde409",
+    "ba8d4bdc79b02d8b50df36eccb17cd44bbb20fec886c9263dd416e8e1c2733e5",
+)
 
 
 def digest(value):
@@ -141,7 +149,7 @@ def completed(root, episode, fingerprint):
     return True
 
 
-def collect(cfg, output, *, limit=None):
+def collect(cfg, output, *, limit=None, workers=1):
     episodes = list(plan(cfg))
     root = Path(output)
     source = source_hashes()
@@ -150,12 +158,10 @@ def collect(cfg, output, *, limit=None):
     if state_file.exists():
         state = json.loads(state_file.read_text())
         if state["fingerprint"] != fingerprint:
-            # This version only adds progress reporting to the previous collector.
-            previous_source = dict(source)
-            previous_source["rps/benchmark/collect.py"] = (
-                "20e3f4081c91773edb6d9835d19d79cb7644f197d71804fe233b851951bde409")
-            if (state["source_sha256"] != previous_source or state["config"] != cfg
-                    or state["fingerprint"] != digest({"config": cfg, "source": previous_source})):
+            # Later versions only add progress reporting and concurrent games; games are unchanged.
+            previous = [dict(source, **{"rps/benchmark/collect.py": h}) for h in COMPATIBLE_COLLECTORS]
+            if not any(state["source_sha256"] == old and state["config"] == cfg
+                       and state["fingerprint"] == digest({"config": cfg, "source": old}) for old in previous):
                 raise ValueError("collection settings or source changed; use a new output directory")
             fingerprint = state["fingerprint"]
     elif root.exists() and any(root.iterdir()):
@@ -171,13 +177,11 @@ def collect(cfg, output, *, limit=None):
     atomic_json(root / "config.json", cfg)
     atomic_json(root / "manifest.json", manifest_for(cfg, episodes, identity))
     done = {ep["id"] for ep in episodes if completed(root, ep, fingerprint)}
-    count = 0
-    progress = GameProgress(sum(ep["n"] * ep["t"] for ep in episodes if ep["id"] not in done))
-    for index, ep in enumerate(episodes, 1):
-        if ep["id"] in done:
-            continue
-        if limit is not None and count >= limit:
-            break
+    pending = [(index, ep) for index, ep in enumerate(episodes, 1) if ep["id"] not in done][:limit]
+    progress = GameProgress(sum(ep["n"] * ep["t"] for _, ep in pending))
+    lock = threading.Lock()
+
+    def play(index, ep):
         log = root / "logs" / f"{ep['id']}.jsonl"
         partial = log.with_suffix(".partial.jsonl")
         # Keep interrupted attempts rather than treating them as completed games.
@@ -189,9 +193,9 @@ def collect(cfg, output, *, limit=None):
         game, _ = game_config(cfg, ep)
         game["log"] = str(partial)
         print(f"[{index}/{len(episodes)}] {ep['id']}", flush=True)
-        with progress.watch(partial, ep["n"], ep["t"]):
+        # Per-round heartbeats only make sense for one game at a time.
+        with progress.watch(partial, ep["n"], ep["t"]) if workers == 1 else contextlib.nullcontext():
             players, history, _ = run(game)
-        progress.finish(ep["n"] * ep["t"])
         observed = symbols(load_jsonl(partial), state_mode=cfg.get("state", "none"))
         if observed.T != ep["t"] or observed.N != ep["n"]:
             raise ValueError("simulator returned an incomplete game")
@@ -204,9 +208,20 @@ def collect(cfg, output, *, limit=None):
             "log_sha256": hashlib.sha256(log.read_bytes()).hexdigest(),
             "parse_failures": {p.name: p.parse_failures for p in players},
             "signals": signals, "signals_followed": followed})
-        done.add(ep["id"])
-        atomic_json(root / "progress.json", {"complete": len(done), "planned": len(episodes)})
-        count += 1
+        with lock:
+            progress.finish(ep["n"] * ep["t"])
+            done.add(ep["id"])
+            atomic_json(root / "progress.json", {"complete": len(done), "planned": len(episodes)})
+
+    # Games are independent (own seeds, players and log files), so several can share one server.
+    with ThreadPoolExecutor(max_workers=workers) as pool:
+        futures = [pool.submit(play, index, ep) for index, ep in pending]
+        try:
+            for future in as_completed(futures):
+                future.result()
+        except BaseException:
+            pool.shutdown(wait=True, cancel_futures=True)
+            raise
     n_complete = len(done)
     atomic_json(root / "progress.json", {"complete": n_complete, "planned": len(episodes)})
     metadata = [json.loads((root / "logs" / f"{ep['id']}.meta.json").read_text())

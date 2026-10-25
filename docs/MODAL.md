@@ -3,7 +3,8 @@
 Install the project locally first; see [RUNNING.md](RUNNING.md).
 
 
-`modal_experiment.py` runs Ollama and the experiment together on one L4 GPU.
+`modal_experiment.py` runs Ollama and the experiment together on one GPU,
+an L4 unless `RPS_GPU` is set at launch (for example `RPS_GPU=A100 modal run ...`).
 It keeps games on the `rps-results` volume and caches weights on
 `rps-ollama-models`. It sends no inference requests to your local Ollama.
 Games remain sequential, with concurrent player calls within each round.
