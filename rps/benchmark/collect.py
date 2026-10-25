@@ -5,6 +5,7 @@ import copy
 import hashlib
 import json
 import math
+import os
 from pathlib import Path
 import random
 import threading
@@ -18,6 +19,8 @@ from rps.ollama import normalize_url
 from .data import seed_for
 from .progress import GameProgress
 
+# Files every shard writes identically at startup; their presence does not make a directory foreign.
+SHARED_SETUP = {"collection.json", "config.json", "manifest.json", "logs"}
 COMPATIBLE_COLLECTORS = (
     "20e3f4081c91773edb6d9835d19d79cb7644f197d71804fe233b851951bde409",
     "ba8d4bdc79b02d8b50df36eccb17cd44bbb20fec886c9263dd416e8e1c2733e5",
@@ -111,7 +114,8 @@ def model_identity(defaults):
 
 def atomic_json(path, value):
     path = Path(path)
-    temporary = path.with_suffix(path.suffix + ".tmp")
+    # Unique per process so that concurrent shards never rename each other's file.
+    temporary = path.with_suffix(f"{path.suffix}.{os.getpid()}.tmp")
     write_json(temporary, value)
     temporary.replace(path)
 
@@ -149,14 +153,15 @@ def completed(root, episode, fingerprint):
     return True
 
 
-def collect(cfg, output, *, limit=None, workers=1):
+def collect(cfg, output, *, limit=None, workers=1, shard=(0, 1)):
     episodes = list(plan(cfg))
     root = Path(output)
     source = source_hashes()
     fingerprint = digest({"config": cfg, "source": source})
     state_file = root / "collection.json"
-    if state_file.exists():
-        state = json.loads(state_file.read_text())
+    # Read once: another shard may create the file while this one starts.
+    state = json.loads(state_file.read_text()) if state_file.exists() else None
+    if state is not None:
         if state["fingerprint"] != fingerprint:
             # Later versions only add progress reporting and concurrent games; games are unchanged.
             previous = [dict(source, **{"rps/benchmark/collect.py": h}) for h in COMPATIBLE_COLLECTORS]
@@ -164,10 +169,10 @@ def collect(cfg, output, *, limit=None, workers=1):
                        and state["fingerprint"] == digest({"config": cfg, "source": old}) for old in previous):
                 raise ValueError("collection settings or source changed; use a new output directory")
             fingerprint = state["fingerprint"]
-    elif root.exists() and any(root.iterdir()):
+    elif root.exists() and any(p.name not in SHARED_SETUP and not p.name.endswith(".tmp") for p in root.iterdir()):
         raise ValueError("output is not an existing collection or an empty directory")
     identity = model_identity(cfg["defaults"])
-    if state_file.exists():
+    if state is not None:
         if state["model"] != identity:
             raise ValueError("model weights changed; use a new output directory")
     else:
@@ -177,7 +182,9 @@ def collect(cfg, output, *, limit=None, workers=1):
     atomic_json(root / "config.json", cfg)
     atomic_json(root / "manifest.json", manifest_for(cfg, episodes, identity))
     done = {ep["id"] for ep in episodes if completed(root, ep, fingerprint)}
-    pending = [(index, ep) for index, ep in enumerate(episodes, 1) if ep["id"] not in done][:limit]
+    # Shard i of k plays every k-th game, so separate servers can split one collection.
+    pending = [(index, ep) for index, ep in enumerate(episodes, 1)
+               if ep["id"] not in done and (index - 1) % shard[1] == shard[0]][:limit]
     progress = GameProgress(sum(ep["n"] * ep["t"] for _, ep in pending))
     lock = threading.Lock()
 

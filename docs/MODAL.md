@@ -63,6 +63,27 @@ game restarts on resume. Repeat the same command with unchanged source,
 settings and model to continue. Detached runs survive terminal disconnection;
 use the Modal dashboard link printed by the CLI to view logs or stop a run.
 
+### Split a batch across containers
+
+One Ollama 0.5.7 server gains nothing from more concurrent games. An A100 ran
+30-round Qwen 14B games at about 1 turn/s, an L4 at about 0.5, and eight games
+sharing one A100 server (`--workers 8`) still gave about 0.5. Splitting the games
+across containers, each with its own server, scales:
+
+```bash
+modal run --detach modal_experiment.py::sharded \
+  --config configs/qwen-comparison-t30.json \
+  --model qwen2.5:14b --run-name modal-qwen14b-comparison-t30 \
+  --shards 10 --max-seconds 19800
+```
+
+Shard i of k plays every k-th game into the same run on the volume. When all
+shards finish, one more container resumes the collection, finds every game
+complete, writes `quality.json` from all games and runs the analysis. The local
+entry point waits for this; if it is interrupted, rerun the plain `run` command
+for the same config, model and run name. Accounts have a concurrent-GPU limit
+(10 here); extra shards wait for a free GPU.
+
 ### Download the results
 
 After the function has exited and committed its files:

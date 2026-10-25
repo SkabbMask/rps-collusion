@@ -64,6 +64,7 @@ def main():
     parser.add_argument("--dry-run", action="store_true", help="print the plan without contacting Ollama")
     parser.add_argument("--limit", type=int, help="collect at most this many new games, then stop")
     parser.add_argument("--workers", type=int, default=1, help="games played at once against the server")
+    parser.add_argument("--shard", default="0/1", help="i/k: play only every k-th game, starting at game i")
     mode = parser.add_mutually_exclusive_group()
     mode.add_argument("--collect-only", action="store_true")
     mode.add_argument("--analyze-only", action="store_true")
@@ -72,6 +73,12 @@ def main():
         parser.error("limit must be positive")
     if args.workers < 1:
         parser.error("workers must be positive")
+    try:
+        shard = tuple(int(x) for x in args.shard.split("/"))
+        if len(shard) != 2 or not 0 <= shard[0] < shard[1]:
+            raise ValueError
+    except ValueError:
+        parser.error("shard must be i/k with 0 <= i < k")
     state_file = Path(args.output) / "collection.json"
     if args.config:
         cfg = json.loads(Path(args.config).read_text())
@@ -92,7 +99,7 @@ def main():
         if not state_file.exists() or cfg != json.loads(state_file.read_text())["config"]:
             parser.error("analysis requires an existing collection with matching settings")
         analyze(args.output, cfg)
-    elif collect(cfg, args.output, limit=args.limit, workers=args.workers) and not args.collect_only:
+    elif collect(cfg, args.output, limit=args.limit, workers=args.workers, shard=shard) and not args.collect_only:
         analyze(args.output, cfg)
 
 

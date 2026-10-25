@@ -29,11 +29,11 @@ for directory in ("rps", "configs"):
 
 @app.function(image=image, gpu=GPU, cpu=4, memory=16384,
               volumes={"/results": results, "/models": models},
-              timeout=24 * 60 * 60, max_containers=1)
+              timeout=24 * 60 * 60, max_containers=16)
 def run(config: str = "configs/qwen-pilot-t30.json", model: str = "qwen2.5:14b",
         run_name: str = "qwen14b-pilot-t30", limit: int = 0,
         max_seconds: int = 7200, collect_only: bool = False,
-        analyze_only: bool = False, workers: int = 1):
+        analyze_only: bool = False, workers: int = 1, shard: str = "0/1"):
     """Run or resume a saved batch. max_seconds includes model startup and analysis."""
     import json
     import subprocess
@@ -65,6 +65,8 @@ def run(config: str = "configs/qwen-pilot-t30.json", model: str = "qwen2.5:14b",
         command += ["--limit", str(limit)]
     if workers > 1:
         command += ["--workers", str(workers)]
+    if shard != "0/1":
+        command += ["--shard", shard]
     if collect_only:
         command += ["--collect-only"]
     if analyze_only:
@@ -72,9 +74,10 @@ def run(config: str = "configs/qwen-pilot-t30.json", model: str = "qwen2.5:14b",
     server = None
     try:
         if not analyze_only:
-            # One slot per concurrent player call: three players in each of `workers` games.
+            # One slot per concurrent player call in each of `workers` games.
+            players = max(json.loads(config_path.read_text())["players"])
             server = subprocess.Popen(["ollama", "serve"], env={
-                **os.environ, "OLLAMA_NUM_PARALLEL": str(max(3, 3 * workers))})
+                **os.environ, "OLLAMA_NUM_PARALLEL": str(players * workers)})
             for attempt in range(120):
                 remaining()
                 if server.poll() is not None:
@@ -103,3 +106,16 @@ def run(config: str = "configs/qwen-pilot-t30.json", model: str = "qwen2.5:14b",
         results.commit()
         models.commit()
     return f"Saved to volume rps-results: /{run_name}"
+
+
+@app.local_entrypoint()
+def sharded(config: str = "configs/qwen-pilot-t30.json", model: str = "qwen2.5:14b",
+            run_name: str = "qwen14b-pilot-t30", shards: int = 8, max_seconds: int = 7200):
+    """Split one collection across `shards` containers, then merge counts and analyse in one."""
+    kwargs = dict(config=config, model=model, run_name=run_name, max_seconds=max_seconds)
+    # Shards write disjoint game files; only identical setup files overlap on the volume.
+    calls = [run.spawn(**kwargs, collect_only=True, shard=f"{i}/{shards}") for i in range(shards)]
+    for call in calls:
+        print(call.get())
+    # A plain resume finds every game complete, rewrites quality.json from all of them and analyses.
+    print(run.remote(**kwargs))
