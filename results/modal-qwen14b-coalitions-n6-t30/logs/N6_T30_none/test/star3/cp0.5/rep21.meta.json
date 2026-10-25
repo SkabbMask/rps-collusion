@@ -1,0 +1,16 @@
+{
+  "id": "N6_T30_none/test/star3/cp0.5/rep21",
+  "seed": 16089571716620792293,
+  "collection_fingerprint": "88b57fe307e9cfb797e3bf6ecb17bd2768f4fe6e959322b9f1082eb25b630e06",
+  "log_sha256": "b9bdb2867ce51d1d60064103e20de7868bc5bbad2b1aa2cfab94fdaf34ca5709",
+  "parse_failures": {
+    "A": 0,
+    "B": 0,
+    "C": 0,
+    "D": 0,
+    "E": 0,
+    "F": 0
+  },
+  "signals": 27,
+  "signals_followed": 24
+}

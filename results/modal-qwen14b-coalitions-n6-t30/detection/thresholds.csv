@@ -1,0 +1,6 @@
+group,method,edge_threshold,threshold,n_edge_fit,n_calibration
+N6_T30_none,bonjour,4.099081257390544,0.05,20,39
+N6_T30_none,graph_components,4.099081257390544,-inf,20,39
+N6_T30_none,graph_louvain,4.099081257390544,-inf,20,39
+N6_T30_none,decoder,4.099081257390544,5.4499113701407715,20,39
+N6_T30_none,growth,4.099081257390544,4.028117429713303,20,39

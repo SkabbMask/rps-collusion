@@ -1,0 +1,27 @@
+{
+  "source": "external labeled logs",
+  "base_revision": "archive checkout (see ATTRIBUTION.md)",
+  "python": "3.12.1",
+  "allow_repeated_observations": true,
+  "repeated_observations": 0,
+  "platform": "Linux-4.19.0-gvisor-x86_64-with-glibc2.35",
+  "versions": {
+    "numpy": "2.5.4",
+    "scipy": "1.18.1",
+    "networkx": "3.7",
+    "matplotlib": "3.11.2",
+    "scikit-learn": "1.9.1"
+  },
+  "dataset_sha256": "21e99825770ac0d390ac47ef3df9f4ba28a773311f899ea583ab0a8bb2a8e6d0",
+  "config_sha256": "a5c2a86aaadd5da5879a15c728b5c860a1b65783e129066ff953768fe3ba20dd",
+  "episodes": 184,
+  "test_episodes": 125,
+  "group_counts": {
+    "N6_T30_none": {
+      "edge_fit": 20,
+      "calibration": 39,
+      "test": 125
+    }
+  },
+  "evaluation_seconds": 3.030881085999999
+}

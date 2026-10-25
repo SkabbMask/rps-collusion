@@ -1,0 +1,16 @@
+{
+  "id": "N6_T30_none/test/honest/cp0/rep19",
+  "seed": 16422714253887456678,
+  "collection_fingerprint": "88b57fe307e9cfb797e3bf6ecb17bd2768f4fe6e959322b9f1082eb25b630e06",
+  "log_sha256": "457874903c177a1755c5f6348e42d5ba8ed861805ba68d05d36c9b8d07575e37",
+  "parse_failures": {
+    "A": 0,
+    "B": 0,
+    "C": 0,
+    "D": 0,
+    "E": 0,
+    "F": 0
+  },
+  "signals": 0,
+  "signals_followed": 0
+}

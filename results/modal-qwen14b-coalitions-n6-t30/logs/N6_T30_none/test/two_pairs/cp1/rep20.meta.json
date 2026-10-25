@@ -1,0 +1,16 @@
+{
+  "id": "N6_T30_none/test/two_pairs/cp1/rep20",
+  "seed": 9759519593561248371,
+  "collection_fingerprint": "88b57fe307e9cfb797e3bf6ecb17bd2768f4fe6e959322b9f1082eb25b630e06",
+  "log_sha256": "a1822330775a26de7a1df6b6a1dc5ebf10a34881a17329942c3c4bce9681c0f1",
+  "parse_failures": {
+    "A": 0,
+    "B": 0,
+    "C": 0,
+    "D": 0,
+    "E": 0,
+    "F": 0
+  },
+  "signals": 60,
+  "signals_followed": 55
+}

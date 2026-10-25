@@ -1,0 +1,16 @@
+{
+  "id": "N6_T30_none/calibration/honest/cp0/rep8",
+  "seed": 13500609130164080727,
+  "collection_fingerprint": "88b57fe307e9cfb797e3bf6ecb17bd2768f4fe6e959322b9f1082eb25b630e06",
+  "log_sha256": "8dc413833aeeda0c1f2a035cb938bf42961c11e2395a2d24e8c5a99b68967493",
+  "parse_failures": {
+    "A": 0,
+    "B": 0,
+    "C": 0,
+    "D": 0,
+    "E": 0,
+    "F": 0
+  },
+  "signals": 0,
+  "signals_followed": 0
+}

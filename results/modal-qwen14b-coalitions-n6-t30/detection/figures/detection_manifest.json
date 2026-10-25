@@ -1,0 +1,23 @@
+{
+  "inputs_sha256": {
+    "predictions.csv": "c0c6fcd2f1d3b0399ce06d10a149ace0a76cf28d3ec5e0a1db827ab36bc5ad5c",
+    "summary.csv": "a28fd92b43116d4cf0744f172e14e5ad5abcbf8f19ace5b6f498ac0e58447f76",
+    "comparison.csv": "937011d69b75c9900685dd00760f28497a18cddba03a4e597cdc2fa72101e203",
+    "thresholds.csv": "9786d538c88d9c3b070e02719cbf88b7e0cf4697c3126c1aaf54331362f541ff",
+    "config.json": "d6e873534408b4e5438b16b12372d6134435001d483d11f733a1ded7b532865f",
+    "provenance.json": "077fd95c8c453c4721d5971b1262ff8c4da6cb1ac370b0d833aa96ba5dc502b3",
+    "figure_exporter.py": "14fbda0ce10496efdd8242192e82d9917d527b81f782bfd354864f163c6b033c"
+  },
+  "files": [
+    "paper_performance.png",
+    "paper_performance.svg",
+    "paper_performance.pdf",
+    "paper_signal_and_horizon.png",
+    "paper_signal_and_horizon.svg",
+    "paper_signal_and_horizon.pdf",
+    "detection_captions.md"
+  ],
+  "options": {},
+  "matplotlib": "3.11.2",
+  "scope": "saved results only; no new experiments"
+}
